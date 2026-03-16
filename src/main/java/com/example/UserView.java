@@ -1,15 +1,19 @@
 package com.example;
 
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 
 @Route("user")
 public class UserView extends VerticalLayout {
 	
 	public UserView() {
-		
-		add(new H1("Welcome User!"));
+        String username = (String) VaadinSession.getCurrent().getAttribute("username");
+		Image image = new Image("https://www.allrecipes.com/thmb/1I95oiTGz6aEpuHd2DAr33w7Mgg=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/12682-apple-pie-by-grandma-ople-natasha-titanov-1x1-1-7f1cd9f631d24ff0b90cac0163247686.jpg", "Apple Pie");
+		add(new H1("Welcome " + username));
+		add(image);
 	}
 	
 }

@@ -8,6 +8,7 @@ import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.login.LoginOverlay;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.server.VaadinSession;
 import java.util.Optional;
 import com.vaadin.flow.router.Route;
 
@@ -15,7 +16,7 @@ import com.vaadin.flow.router.Route;
 @Route("")
 	public class LoginView extends Composite<LoginOverlay> {
 	 private final UserRepository userRepository;
-	 
+	 	 
 	 public LoginView(UserRepository userRepository) {
 		this.userRepository = userRepository;
 		
@@ -28,14 +29,17 @@ import com.vaadin.flow.router.Route;
 			String username  = event.getUsername();
 			String password  = event.getPassword();
 			
+			// make sure error state is reset for a fresh attempt
+			loginOverlay.setError(false);
+			
 			Optional<User> user = userRepository.findByUsername(username);
 			
 			if (user.isPresent() && user.get().getPassword().equals(password)) {
-				loginOverlay.setError(false);
+				VaadinSession.getCurrent().setAttribute("username", username);
 				UI.getCurrent().navigate("user");
 			} else {
-				loginOverlay.setError(true);
 				Notification.show("Incorrect Username or Password");
+				UI.getCurrent().getPage().reload(); // refresh to reset overlay
 			}
 		});
 	
