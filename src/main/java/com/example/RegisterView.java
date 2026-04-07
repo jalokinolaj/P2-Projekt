@@ -11,6 +11,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.router.Route;
 
+@SuppressWarnings("rawtypes")
 @Route("register")
 public class RegisterView extends Composite{
 	private final UserRepository userRepository;
