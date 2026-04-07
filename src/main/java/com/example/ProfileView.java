@@ -16,6 +16,7 @@ import com.vaadin.flow.server.VaadinSession;
 @Route("profile")
 public class ProfileView extends VerticalLayout {
 
+    private final UserRepository userRepository;
     private final Binder<User> binder = new Binder<>(User.class);
 
     private User currentUser;
@@ -72,4 +73,4 @@ public class ProfileView extends VerticalLayout {
             Notification.show("Error saving profile");
         }
     }
-}
+}		
