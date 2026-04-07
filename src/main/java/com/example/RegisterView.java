@@ -39,8 +39,7 @@ public class RegisterView extends Composite{
 				password1.getValue(),
 				password2.getValue(),	
 				diet.getValue()
-				))
-								
+				))		
 		);
 	}
 	

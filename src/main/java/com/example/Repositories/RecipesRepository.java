@@ -8,4 +8,5 @@ import java.util.List;
 @Repository
 public interface RecipesRepository extends JpaRepository<Recipes, Long> {
     List<Recipes> findAllByOrderByRatingDesc();
+    List<Recipes> findByRecipeNameContainingIgnoreCase(String name);
 }

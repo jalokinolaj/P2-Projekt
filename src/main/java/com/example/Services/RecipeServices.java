@@ -21,4 +21,8 @@ public class RecipeServices {
     public List<Recipes> getRecipesSortedByRating() {
         return recipesRepository.findAllByOrderByRatingDesc();
     }
+
+    public List<Recipes> searchRecipesByName(String name) {
+        return recipesRepository.findByRecipeNameContainingIgnoreCase(name);
+    }
 }

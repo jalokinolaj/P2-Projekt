@@ -6,6 +6,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
@@ -13,15 +14,24 @@ import com.vaadin.flow.router.Route;
 @PageTitle("Recipes")
 public class RecipeViewsGrid extends VerticalLayout {
 
-    public RecipeViewsGrid(RecipeServices recipeServices) {
-        Grid<Recipes> grid = new Grid<>(Recipes.class, false);
+    private Grid<Recipes> grid;
+    private RecipeServices recipeServices;
 
-        // Use the exact Java field names from your Recipes class
+    public RecipeViewsGrid(RecipeServices recipeServices) {
+        this.recipeServices = recipeServices;
+        this.grid = new Grid<>(Recipes.class, false);
+
+        // Search field
+        TextField searchField = new TextField();
+        searchField.setPlaceholder("Search recipes");
+        searchField.setWidth("100%");
+        searchField.addValueChangeListener(event -> filterRecipes(event.getValue()));
+
+        // Configure grid
         grid.addColumn(Recipes::getId).setHeader("ID");
         grid.addColumn(Recipes::getRecipeName).setHeader("Recipe Name");
         grid.addColumn(Recipes::getRating).setHeader("Rating");
 
-        // Image column needs a component renderer
         grid.addComponentColumn(recipe -> {
             Image img = new Image(recipe.getImgSrc(), recipe.getRecipeName());
             img.setWidth("80px");
@@ -32,9 +42,18 @@ public class RecipeViewsGrid extends VerticalLayout {
             return img;
         }).setHeader("Picture");
 
-        // Load data sorted by rating
+        // Initial load
         grid.setItems(recipeServices.getRecipesSortedByRating());
+
         setSizeFull();
-        add(grid);
+        add(searchField, grid);
+    }
+
+    private void filterRecipes(String searchTerm) {
+        if (searchTerm == null || searchTerm.trim().isEmpty()) {
+            grid.setItems(recipeServices.getRecipesSortedByRating());
+        } else {
+            grid.setItems(recipeServices.searchRecipesByName(searchTerm.trim()));
+        }
     }
 }
