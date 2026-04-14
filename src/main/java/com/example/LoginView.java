@@ -12,6 +12,7 @@ import java.util.Optional;
 import com.vaadin.flow.router.Route;
 
 
+@SuppressWarnings("unused")
 @Route("")
 	public class LoginView extends Composite<LoginOverlay> {
 	 private final UserRepository userRepository;
