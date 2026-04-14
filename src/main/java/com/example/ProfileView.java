@@ -53,7 +53,7 @@ public class ProfileView extends VerticalLayout {
         FormLayout formLayout = new FormLayout();
         formLayout.add(username, diet);
 
-        binder.bind(username, User::getUsername, User::setUsername);
+        binder.bind(username, User::getUsername, User::		setUsername);
         binder.bind(diet, User::getDiet, User::setDiet);
 
         binder.readBean(currentUser);
