@@ -2,8 +2,6 @@ package com.example;
 
 import com.vaadin.flow.component.button.Button;
 
-import java.security.PrivateKey;
-
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.login.LoginOverlay;
@@ -32,7 +30,7 @@ import com.vaadin.flow.router.Route;
 			// make sure error state is reset for a fresh attempt
 			loginOverlay.setError(false);
 			
-			Optional<User> user = userRepository.findByUsername(username);
+			Optional<User> user = this.userRepository.findByUsername(username);
 			
 			if (user.isPresent() && user.get().getPassword().equals(password)) {
 				VaadinSession.getCurrent().setAttribute("username", username);
