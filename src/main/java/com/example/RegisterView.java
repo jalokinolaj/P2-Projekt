@@ -5,21 +5,20 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.router.Route;
 
 @Route("register")
-public class RegisterView extends Composite{
+public class RegisterView extends Composite<VerticalLayout> {
 	private final UserRepository userRepository;
 
     public RegisterView(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 	@Override
-	protected Component initContent() {
+	protected VerticalLayout initContent() {
 		TextField username = new TextField("Username");
 		PasswordField password1 = new PasswordField("Password");
 		PasswordField password2 = new PasswordField("Confirm Password");
@@ -61,7 +60,6 @@ public class RegisterView extends Composite{
         userRepository.save(user);
         
         Notification.show("Registration successful");
-   
         UI.getCurrent().navigate("");
 	}
 }

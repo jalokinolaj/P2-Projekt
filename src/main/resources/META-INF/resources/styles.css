@@ -1,1 +1,237 @@
 /* Add your styles here */
+
+/* ── Page Layout ── */
+.page-wrapper {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 2rem 3rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Header ── */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2rem 0 1rem;
+  gap: 1rem;
+}
+
+.header-spacer {
+  flex: 1;
+}
+
+.title-area {
+  flex: 2;
+  text-align: center;
+}
+
+.main-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: 0;
+  color: #111;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 1rem;
+}
+
+.profile-btn {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0.5rem 1.2rem;
+  font-weight: 500;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+/* ── Search Card ── */
+.search-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.search-field {
+  flex: 1;
+}
+
+.add-btn {
+  background: #2563eb !important;
+  min-width: 90px;
+}
+
+/* ── Ingredient Chips ── */
+.ingredient-chips {
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ingredient-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  border-radius: 20px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.875rem;
+}
+
+.chip-remove {
+  padding: 0 !important;
+  min-width: 0 !important;
+  color: #1d4ed8 !important;
+  font-size: 1rem !important;
+  line-height: 1;
+}
+
+/* ── Category Filter Row ── */
+.filter-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.2rem;
+}
+
+.filter-btn {
+  border-radius: 20px !important;
+  font-size: 0.9rem;
+}
+
+/* ── Section Title ── */
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0.5rem 0 1rem;
+}
+
+/* ── Recipe Grid ── */
+.recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ── Recipe Card ── */
+.recipe-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.recipe-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.13);
+}
+
+.recipe-image {
+  background: linear-gradient(135deg, #f97316 0%, #ec4899 100%);
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chef-icon {
+  font-size: 3.5rem;
+  opacity: 0.9;
+}
+
+.recipe-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card-body {
+  padding: 1rem 1.2rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.recipe-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.3;
+  flex: 1;
+}
+
+.match-badge {
+  background: #dcfce7;
+  color: #15803d;
+  border-radius: 6px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.category-chip {
+  display: inline-block;
+  background: #eff6ff;
+  color: #2563eb;
+  border-radius: 20px;
+  padding: 0.15rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.meta-row {
+  display: flex;
+  gap: 1rem;
+  color: #555;
+  font-size: 0.85rem;
+}
+
+.ingredients-label {
+  margin: 0.3rem 0 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.ingredients-list {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+/* ── Profile Dialog ── */
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f97316, #ec4899);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
