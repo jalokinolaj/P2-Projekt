@@ -1,5 +1,7 @@
 package com.example.Views;
 
+import java.util.List;
+
 import com.example.Inventory;
 import com.example.Services.InventoryServices;
 import com.vaadin.flow.component.button.Button;
@@ -10,12 +12,12 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
-import java.util.List;
 
 @Route("inventory")
 @PageTitle("Inventory")
@@ -53,8 +55,10 @@ public class InventoryView extends VerticalLayout {
 		NumberField quantity = new NumberField("Quantity");
 		quantity.setMin(0);
 
-		TextField unit = new TextField("Unit");
-		unit.setValue("pcs");
+		Select<String> unit = new Select<>();
+		unit.setLabel("Unit");
+		unit.setItems("oz", "fl oz", "cups", "tbsp", "tsp", "lb", "pt", "qt", "gal", "pcs");
+		unit.setValue("oz");
 
 		NumberField minimumQuantity = new NumberField("Low stock threshold");
 		minimumQuantity.setMin(0);
@@ -75,7 +79,7 @@ public class InventoryView extends VerticalLayout {
 			}
 
 			if (unit.getValue() == null || unit.getValue().isBlank()) {
-				Notification.show("Unit is required (for example: pcs, g, ml). ");
+				Notification.show("Please select a unit.");
 				return;
 			}
 
