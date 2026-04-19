@@ -1,13 +1,14 @@
 package com.example;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "inventory_items")
@@ -29,9 +30,17 @@ public class Inventory {
 	// Current amount available in stock.
 	private Double quantity;
 
+	@Column(name = "normalized_quantity", nullable = false)
+	// Normalized quantity for matching against recipe requirements, for example: grams of total weight instead of pieces.
+	private Double normalizedQuantity;	
+
 	@Column(nullable = false)
 	// Unit for quantity, for example: pcs, g, ml.
 	private String unit;
+
+	@Column(name = "normalized_unit", nullable = false)
+	// Normalized unit for matching against recipe requirements, for example: pcs, g, ml.
+	private String normalizedUnit;
 
 	@Column(name = "minimum_quantity", nullable = false)
 	// Low-stock threshold used by urgency/risk logic.
@@ -47,13 +56,15 @@ public class Inventory {
 	public Inventory() {
 	}
 
-	public Inventory(String username, String ingredientName, Double quantity, String unit, Double minimumQuantity,
+	public Inventory(String username, String ingredientName, Double quantity, Double normalizedQuantity, String unit, String normalizedUnit, Double minimumQuantity,
 			LocalDate expiryDate) {
 		// This timestamp helps when you later want "recently changed" sorting.
 		this.username = username;
 		this.ingredientName = ingredientName;
 		this.quantity = quantity;
+		this.normalizedQuantity = normalizedQuantity;
 		this.unit = unit;
+		this.normalizedUnit = normalizedUnit;
 		this.minimumQuantity = minimumQuantity;
 		this.expiryDate = expiryDate;
 		this.updatedAt = LocalDateTime.now();
@@ -67,7 +78,7 @@ public class Inventory {
 		return username;
 	}
 
-	public void setUsername(String username) {
+	public void setUsername(String username) { 
 		this.username = username;
 	}
 
@@ -86,6 +97,12 @@ public class Inventory {
 	public void setQuantity(Double quantity) {
 		this.quantity = quantity;
 	}
+	public Double getNormalizedQuantity() {
+		return normalizedQuantity;
+	}
+	public void setNormalizedQuantity(Double normalizedQuantity) {
+		this.normalizedQuantity = normalizedQuantity;
+	}
 
 	public String getUnit() {
 		return unit;
@@ -93,6 +110,14 @@ public class Inventory {
 
 	public void setUnit(String unit) {
 		this.unit = unit;
+	}
+
+	public String getNormalizedUnit() {
+		return normalizedUnit;
+	}
+
+	public void setNormalizedUnit(String normalizedUnit) {
+		this.normalizedUnit = normalizedUnit;
 	}
 
 	public Double getMinimumQuantity() {
