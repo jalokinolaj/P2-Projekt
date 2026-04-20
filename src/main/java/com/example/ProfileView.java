@@ -12,7 +12,8 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
-
+import com.vaadin.flow.component.checkbox.CheckboxGroup;
+import java.util.Set;
 @Route("profile")
 public class ProfileView extends VerticalLayout {
 
@@ -20,6 +21,24 @@ public class ProfileView extends VerticalLayout {
     private final Binder<User> binder = new Binder<>(User.class);
 
     private User currentUser;
+    private CheckboxGroup<String> allergies;
+
+    private static final String[] EU14_ALLERGENS = {
+            "Gluten",
+            "Krebsdyr",
+            "Æg",
+            "Fisk",
+            "Jordnødder",
+            "Soja",
+            "Mælk",
+            "Nødder",
+            "Selleri",
+            "Sennep",
+            "Sesam",
+            "Svovldioxid",
+            "Lupin",
+            "Bløddyr"
+    };
 
     public ProfileView(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -48,29 +67,36 @@ public class ProfileView extends VerticalLayout {
         diet.setLabel("Dietary Preference");
         diet.setItems("none", "Vegan", "Vegetarian", "Pescatarian", "Omnivore");
 
+        allergies = new CheckboxGroup<>();
+        allergies.setLabel("Allergener (EU-14)");
+        allergies.setItems(EU14_ALLERGENS);
+        
         Button saveButton = new Button("Save Changes", event -> saveProfile());
 
         FormLayout formLayout = new FormLayout();
-        formLayout.add(username, diet);
+        formLayout.add(username, diet, allergies);
 
         binder.bind(username, User::getUsername, User::setUsername);
         binder.bind(diet, User::getDiet, User::setDiet);
 
         binder.readBean(currentUser);
-
-        add(title, formLayout, saveButton);
+        
+        if (currentUser.getAllergies() != null && !currentUser.getAllergies().isBlank()) {
+            allergies.setValue(Set.of(currentUser.getAllergies().split(",")));
+            
+        add(title, formLayout, saveButton);}
     }
 
     private void saveProfile() {
         try {
             binder.writeBean(currentUser);
+            currentUser.setAllergies(String.join(",", allergies.getValue()));
             userRepository.save(currentUser);
-
             VaadinSession.getCurrent().setAttribute("username", currentUser.getUsername());
 
             Notification.show("Profile updated");
         } catch (Exception e) {
-            Notification.show("Error saving profile");
+            Notification.show("Error saving profile"+ e.getMessage());
         }
     }
 }		
