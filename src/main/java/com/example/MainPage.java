@@ -1,14 +1,15 @@
 package com.example;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-// Written by GitHub Copilot: needed for safe lowercase URL protocol checks.
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.example.Services.InventoryServices;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
@@ -72,13 +73,22 @@ public class MainPage extends VerticalLayout {
     // All recipes loaded from the database at startup, used for in-memory filtering
     private final List<RecipeEntity> cachedRecipes;
 
+    // Current user's inventory rows, used for fridge matching and urgency sorting.
+    private final List<Inventory> inventoryItems;
+
+    // Current user's inventory ingredient names, used for fridge-mode sorting.
+    private final List<String> inventoryIngredients;
+
+    // When true, recipes are sorted by inventory match from the user's fridge.
+    private boolean fridgeModeEnabled = false;
+
     /**
      * Constructor — called by Vaadin/Spring when the user navigates to "/main".
      * Checks if a user is logged in, and either shows the main UI or an error screen.
      *
      * @param recipeRepository injected by Spring, provides access to the recipes table
      */
-    public MainPage(RecipeRepository recipeRepository) {
+    public MainPage(RecipeRepository recipeRepository, InventoryServices inventoryServices) {
         this.recipeRepository = recipeRepository;
 
         // Check if a user is stored in the current session
@@ -86,6 +96,8 @@ public class MainPage extends VerticalLayout {
         if (sessionUser == null) {
             // No logged-in user — show an error card and stop building the page
             this.cachedRecipes = List.of();
+            this.inventoryItems = List.of();
+            this.inventoryIngredients = List.of();
             setSizeFull();
             setJustifyContentMode(JustifyContentMode.CENTER);
             setAlignItems(Alignment.CENTER);
@@ -112,6 +124,13 @@ public class MainPage extends VerticalLayout {
 
         // Load all recipes from the database once and store them in memory
         this.cachedRecipes = recipeRepository.findAll();
+        this.inventoryItems = inventoryServices.getInventoryForUser(sessionUser.getUsername());
+        this.inventoryIngredients = inventoryItems.stream()
+            .map(Inventory::getIngredientName)
+            .filter(name -> name != null && !name.isBlank())
+            .map(name -> name.trim().toLowerCase(Locale.ROOT))
+            .distinct()
+            .collect(Collectors.toList());
 
         setSizeFull();
         setPadding(false);
@@ -319,6 +338,24 @@ public class MainPage extends VerticalLayout {
             filterRow.add(btn);
         }
 
+        Button fridgeModeBtn = new Button("Fridge mode: Off", VaadinIcon.ARCHIVE.create());
+        fridgeModeBtn.addClassName("filter-btn");
+        fridgeModeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        fridgeModeBtn.addClickListener(e -> {
+            fridgeModeEnabled = !fridgeModeEnabled;
+            if (fridgeModeEnabled) {
+                fridgeModeBtn.setText("Fridge mode: On");
+                fridgeModeBtn.removeThemeVariants(ButtonVariant.LUMO_TERTIARY);
+                fridgeModeBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            } else {
+                fridgeModeBtn.setText("Fridge mode: Off");
+                fridgeModeBtn.removeThemeVariants(ButtonVariant.LUMO_PRIMARY);
+                fridgeModeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+            }
+            refreshRecipeGrid();
+        });
+        filterRow.add(fridgeModeBtn);
+
         return filterRow;
     }
 
@@ -372,8 +409,13 @@ public class MainPage extends VerticalLayout {
                 .collect(Collectors.toList());
         }
 
-        // Step 4: Sort by ingredient match % (highest first) when ingredients are active
-        if (!addedIngredients.isEmpty()) {
+        // Step 4: Sort by fridge match when fridge mode is enabled.
+        // Otherwise keep existing behavior: sort by manual ingredient match when chips are active.
+        if (fridgeModeEnabled) {
+            results = results.stream()
+                .sorted((a, b) -> calculateFridgeScore(b) - calculateFridgeScore(a))
+                .collect(Collectors.toList());
+        } else if (!addedIngredients.isEmpty()) {
             results = results.stream()
                 .sorted((a, b) -> calculateMatch(b) - calculateMatch(a))
                 .collect(Collectors.toList());
@@ -392,9 +434,53 @@ public class MainPage extends VerticalLayout {
 
         // Render a card for each recipe
         for (RecipeEntity entity : results) {
-            int matchPercent = calculateMatch(entity);
+            int matchPercent = fridgeModeEnabled ? calculateInventoryMatch(entity) : calculateMatch(entity);
             recipeGrid.add(createRecipeCard(entity, matchPercent));
         }
+    }
+
+    private int calculateInventoryMatch(RecipeEntity entity) {
+        if (inventoryIngredients.isEmpty() || entity.getIngredients() == null) {
+            return 0;
+        }
+        String ingText = entity.getIngredients().toLowerCase(Locale.ROOT);
+        long matches = inventoryIngredients.stream()
+            .filter(ingText::contains)
+            .count();
+        return (int) Math.round((double) matches / inventoryIngredients.size() * 100);
+    }
+
+    // Simple fridge score:
+    // 1) base = normal inventory match percent
+    // 2) +10 points for each matching ingredient that is about to run out
+    private int calculateFridgeScore(RecipeEntity entity) {
+        if (entity.getIngredients() == null) {
+            return 0;
+        }
+
+        String recipeIngredients = entity.getIngredients().toLowerCase(Locale.ROOT);
+        int matchPercent = calculateInventoryMatch(entity);
+
+        long runOutSoonHits = inventoryItems.stream()
+            .filter(item -> item.getIngredientName() != null)
+            .filter(item -> recipeIngredients.contains(item.getIngredientName().toLowerCase(Locale.ROOT)))
+            .filter(this::isAboutToRunOut)
+            .count();
+
+        return matchPercent + (int) runOutSoonHits * 10;
+    }
+
+    private boolean isAboutToRunOut(Inventory item) {
+        Double quantityValue = item.getQuantity();
+        Double minimumValue = item.getMinimumQuantity();
+        double quantity = quantityValue == null ? 0.0 : quantityValue;
+        double minimum = minimumValue == null ? 0.0 : minimumValue;
+
+        boolean lowStock = quantity <= minimum;
+        LocalDate expiryDate = item.getExpiryDate();
+        boolean expiringSoon = expiryDate != null && !expiryDate.isAfter(LocalDate.now().plusDays(7));
+
+        return lowStock || expiringSoon;
     }
 
     /**
@@ -681,7 +767,10 @@ public class MainPage extends VerticalLayout {
         Span ingCount = new Span("Ingredients added: " + addedIngredients.size());
         ingCount.getStyle().set("color", "var(--lumo-secondary-text-color)");
         content.add(ingCount);
-
+        Button inventoryBtn = new Button("Go to Inventory", e -> {
+            dialog.close();
+            UI.getCurrent().navigate("inventory");
+        });
         // Logout: close the Vaadin session and navigate back to the login page
         Button logoutBtn = new Button("Logout", VaadinIcon.SIGN_OUT.create(), e -> {
             VaadinSession.getCurrent().close();
@@ -695,7 +784,8 @@ public class MainPage extends VerticalLayout {
         closeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         closeBtn.setWidthFull();
 
-        content.add(logoutBtn, closeBtn);
+        inventoryBtn.setWidthFull();
+        content.add(inventoryBtn, logoutBtn, closeBtn);
         dialog.add(content);
         dialog.open();
     }

@@ -1,6 +1,7 @@
 package com.example;
 
 import java.util.Optional;
+import com.vaadin.flow.component.button.Button;
 
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.UI;
@@ -30,7 +31,7 @@ public class LoginView extends Composite<LoginOverlay> {
 			// make sure error state is reset for a fresh attempt
 			loginOverlay.setError(false);
 			
-			Optional<User> user = userRepository.findByUsername(username);
+			Optional<User> user = this.userRepository.findByUsername(username);
 			
 			if (user.isPresent() && user.get().getPassword().equals(password)) {
 				loginOverlay.setError(false);

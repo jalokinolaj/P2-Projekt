@@ -1,29 +1,51 @@
 package com.example.Views;
-import java.lang.String;
-import com.example.Recipes;
+import com.example.Services.RecipeRecommendation;
 import com.example.Services.RecipeServices;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Route("recipes")
 @PageTitle("Recipes")
 public class RecipeViewsGrid extends VerticalLayout {
 
+    private final Grid<RecipeRecommendation> grid;
+    private final String username;
+    private List<RecipeRecommendation> recommendations;
+
     public RecipeViewsGrid(RecipeServices recipeServices) {
-        Grid<Recipes> grid = new Grid<>(Recipes.class, false);
+        this.grid = new Grid<>(RecipeRecommendation.class, false);
+        this.username = (String) VaadinSession.getCurrent().getAttribute("username");
 
-        // Use the exact Java field names from your Recipes class
-        grid.addColumn(Recipes::getId).setHeader("ID");
-        grid.addColumn(Recipes::getRecipeName).setHeader("Recipe Name");
-        grid.addColumn(Recipes::getRating).setHeader("Rating");
+        // Recommendations depend on user inventory, so require a logged-in user.
+        if (this.username == null || this.username.isBlank()) {
+            add(new Span("Please login first."));
+            return;
+        }
 
-        // Image column needs a component renderer
-        grid.addComponentColumn(recipe -> {
-            Image img = new Image(recipe.getImgSrc(), recipe.getRecipeName());
+        // Search field
+        TextField searchField = new TextField();
+        searchField.setPlaceholder("Search recipes by name");
+        searchField.setWidth("100%");
+        searchField.addValueChangeListener(event -> filterRecipes(event.getValue()));
+
+        // Configure grid
+        grid.addColumn(item -> item.recipe().getId()).setHeader("ID");
+        grid.addColumn(item -> item.recipe().getRecipeName()).setHeader("Recipe Name");
+        grid.addColumn(item -> String.format("%.0f%%", item.matchPercent())).setHeader("Match");
+        grid.addColumn(RecipeRecommendation::missingIngredients).setHeader("Missing Ingredients");
+        grid.addColumn(RecipeRecommendation::runOutFirstIngredient).setHeader("Runs Out First");
+        grid.addColumn(item -> item.recipe().getRating()).setHeader("Rating");
+
+        grid.addComponentColumn(item -> {
+            Image img = new Image(item.recipe().getImgSrc(), item.recipe().getRecipeName());
             img.setWidth("80px");
             img.setHeight("80px");
             img.getStyle().set("object-fit", "cover").set("border-radius", "8px");
@@ -32,9 +54,23 @@ public class RecipeViewsGrid extends VerticalLayout {
             return img;
         }).setHeader("Picture");
 
-        // Load data sorted by rating
-        grid.setItems(recipeServices.getRecipesSortedByRating());
+        // Initial load: already ranked by match %, urgency, then rating.
+        recommendations = recipeServices.getRankedRecipesForUser(username);
+        grid.setItems(recommendations);
+
         setSizeFull();
-        add(grid);
+        add(searchField, grid);
+    }
+
+    private void filterRecipes(String searchTerm) {
+        if (searchTerm == null || searchTerm.trim().isEmpty()) {
+            grid.setItems(recommendations);
+        } else {
+            // Client-side filtering on top of the pre-ranked recommendations list.
+            String normalized = searchTerm.trim().toLowerCase();
+            grid.setItems(recommendations.stream()
+                    .filter(item -> item.recipe().getRecipeName().toLowerCase().contains(normalized))
+                    .collect(Collectors.toList()));
+        }
     }
 }
