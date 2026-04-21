@@ -9,10 +9,26 @@ You can also start the application from the command line by running:
 ./mvnw
 ```
 
+[//]: # (Written by GitHub Copilot: Windows-specific Maven wrapper command.)
+
+On Windows, use:
+
+```powershell
+.\mvnw.cmd
+```
+
 To build the application in production mode, run:
 
 ```bash
 ./mvnw package
+```
+
+[//]: # (Written by GitHub Copilot: Windows-specific production build command.)
+
+On Windows, use:
+
+```powershell
+.\mvnw.cmd package
 ```
 
 To build a Docker image, run:
