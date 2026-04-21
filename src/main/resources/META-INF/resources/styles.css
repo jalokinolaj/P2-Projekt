@@ -56,7 +56,7 @@
 .search-card {
   background: #fff;
   border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   padding: 1.5rem;
   margin: 1.5rem 0;
 }
@@ -128,7 +128,7 @@
 .recipe-card {
   background: #fff;
   border-radius: 14px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -137,7 +137,7 @@
 
 .recipe-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.13);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.13);
 }
 
 .recipe-image {
@@ -217,6 +217,12 @@
 }
 
 .ingredients-list {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.nutrition-info {
+  margin-top: 0.5rem;
   font-size: 0.85rem;
   color: #555;
 }

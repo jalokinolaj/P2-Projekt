@@ -28,6 +28,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
+
 /**
  * MainPage is the primary view of the Recipe Finder application.
  * It is accessible at the "/main" route and displays a searchable,
@@ -456,6 +457,25 @@ public class MainPage extends VerticalLayout {
     }
 
     /**
+     * Parses the nutrition text to extract the protein amount.
+     * @param nutritionText the raw nutrition text from the database
+     * @return a string with the protein amount or empty if not found
+     */    
+    private String parseNutrition(String nutritionText){
+        if (nutritionText == null) return "";
+        String target = "Protein";
+        Pattern pattern = Pattern.compile(target + ":?\\s*(\\d+\\.?\\d*)\\s*g", Pattern.CASE_INSENSITIVE);
+        Matcher match = pattern.matcher(nutritionText);
+        if (match.find()) {
+            return "🍗 " + match.group(1) + "g protein";
+        } else {
+            return "";
+        }
+    } 
+
+
+
+    /**
      * Splits the raw ingredients string (a comma-separated list of ingredient descriptions)
      * into an array of individual ingredient strings, capped at 8 items for display purposes.
      *
@@ -574,7 +594,7 @@ public class MainPage extends VerticalLayout {
         Span ingList = new Span(String.join(", ", ingredients));
         ingList.addClassName("ingredients-list");
 
-        body.add(titleRow, catChip, metaRow, ingLabel, ingList);
+        body.add(titleRow, catChip, metaRow, ingLabel, ingList, new Span(parseNutrition(entity.getNutrition())));
         card.add(imageArea, body);
         return card;
     }
