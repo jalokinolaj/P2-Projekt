@@ -9,6 +9,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -22,6 +24,7 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -599,11 +602,58 @@ public class MainPage extends VerticalLayout {
         return card;
     }
 
-    /**
+    /*
      * Opens a modal dialog showing the logged-in user's profile information.
      * Displays the username, number of ingredients currently added, and a logout button.
      * Logging out clears the session and redirects to the login page.
      */
+
+    @Override
+    protected void onAttach(AttachEvent attachEvent) {
+        super.onAttach(attachEvent);
+        // Inactivity timer only starts when you are actually logged in and not in the login page
+        if (VaadinSession.getCurrent().getAttribute("user") == null) return;
+
+        getElement().executeJs(
+            "var idleTimer, warnTimer;" +
+            "var WARN_MS  = 540000;" +  // 9 minuter 540000
+            "var IDLE_MS  = 600000;" +  // 10 minuter 600000
+            "function resetTimers() {" +
+            "  clearTimeout(idleTimer); clearTimeout(warnTimer);" +
+            "  warnTimer = setTimeout(function() { $0.$server.warnInactivity(); }, WARN_MS);" +
+            "  idleTimer = setTimeout(function() { $0.$server.logoutDueToInactivity(); }, IDLE_MS);" +
+            "}" +
+            "['mousemove','keydown','mousedown','touchstart','scroll','click']" +
+            "  .forEach(function(e) { document.addEventListener(e, resetTimers, true); });" +
+            "resetTimers();",
+            getElement()
+        );
+    }
+
+    // This is the message that pops up right before you get logged out
+    // Duration is exactly 60000 ms, so right as you are getting logged out, thats when it goes away
+    // You then have plenty of time to see the pop up message
+    @ClientCallable
+    public void warnInactivity() {
+        Notification warning = new Notification(
+            "You will be logged out in 1 minute due to inactivity.", 60000,
+            Notification.Position.TOP_CENTER);
+        warning.addThemeVariants(NotificationVariant.LUMO_WARNING);
+        warning.open();
+    }
+
+    @ClientCallable
+    public void logoutDueToInactivity() {
+        VaadinSession.getCurrent().close();
+        UI ui = UI.getCurrent();
+        Notification done = new Notification(
+            "You have been logged out due to inactivity.", 4000,
+            Notification.Position.MIDDLE);
+        done.addThemeVariants(NotificationVariant.LUMO_PRIMARY);
+        done.open();
+        ui.navigate("");
+    }
+
     private void openProfileDialog() {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("My Profile");
