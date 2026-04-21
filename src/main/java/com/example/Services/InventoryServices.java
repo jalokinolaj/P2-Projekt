@@ -25,7 +25,7 @@ public class InventoryServices {
 		return inventoryRepository.findByUsernameOrderByQuantityAsc(username);
 	}
 
-	public Inventory upsertIngredient(String username, String ingredientName, Double quantity, String unit,
+	public Inventory addOrUpdateIngredient(String username, String ingredientName, Double quantity, String unit,
 			Double minimumQuantity, LocalDate expiryDate) {
 		// Upsert: update existing ingredient row for this user, otherwise create a new one.
 		String trimmedIngredientName = ingredientName.trim();

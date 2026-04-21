@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.example.Inventory;
 import com.example.Services.InventoryServices;
+import com.example.User;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -33,7 +34,8 @@ public class InventoryView extends VerticalLayout {
 		this.inventoryGrid = new Grid<>(Inventory.class, false);
 		this.runOutGrid = new Grid<>(Inventory.class, false);
 
-		String username = (String) VaadinSession.getCurrent().getAttribute("username");
+		User sessionUser = (User) VaadinSession.getCurrent().getAttribute("user");
+		String username = sessionUser != null ? sessionUser.getUsername() : null;
 		// This view is user-specific, so block access when no session user exists.
 		if (username == null || username.isBlank()) {
 			add(new Span("Please login first."));
@@ -87,7 +89,7 @@ public class InventoryView extends VerticalLayout {
 			Double minQtyValue = minimumQuantity.getValue();
 			double minQty = minQtyValue == null ? 0.0 : minQtyValue;
 
-			inventoryServices.upsertIngredient(
+			inventoryServices.addOrUpdateIngredient(
 					username,
 					ingredientName.getValue(),
 					quantity.getValue(),
@@ -118,7 +120,7 @@ public class InventoryView extends VerticalLayout {
 			Button editButton = new Button("Edit amount", click -> openEditAmountDialog(item));
 			Button deleteButton = new Button("Delete", click -> {
 				inventoryServices.deleteInventoryItem(item.getId());
-				String username = (String) VaadinSession.getCurrent().getAttribute("username");
+				String username = getSessionUsername();
 				refreshData(username);
 			});
 
@@ -130,7 +132,7 @@ public class InventoryView extends VerticalLayout {
 	}
 
 	private void openEditAmountDialog(Inventory item) {
-		String username = (String) VaadinSession.getCurrent().getAttribute("username");
+		String username = getSessionUsername();
 		if (username == null || username.isBlank()) {
 			Notification.show("Please login first.");
 			return;
@@ -182,5 +184,10 @@ public class InventoryView extends VerticalLayout {
 		List<Inventory> inventory = inventoryServices.getInventoryForUser(username);
 		inventoryGrid.setItems(inventory);
 		runOutGrid.setItems(inventoryServices.getRunOutSoonForUser(username));
+	}
+
+	private String getSessionUsername() {
+		User sessionUser = (User) VaadinSession.getCurrent().getAttribute("user");
+		return sessionUser != null ? sessionUser.getUsername() : null;
 	}
 }
