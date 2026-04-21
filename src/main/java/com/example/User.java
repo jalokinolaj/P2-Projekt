@@ -21,12 +21,21 @@ public class User {
 	    @Column(nullable = false)
 	    private String password;
 
+		@Column(nullable = false)
+		private String diet;
+		
+		@Column(nullable = false)
+		private String allergies;
+
+
 	    public User() {
 	    }
 
-	    public User(String username, String password) {
+	    public User(String username, String password, String diet,String allergies) {
 	        this.username = username;
 	        this.password = password;
+	        this.diet = diet;
+	        this.allergies = allergies;
 	    }
 
 	    public Long getId() {
@@ -41,12 +50,29 @@ public class User {
 	        this.username = username;
 	    }
 
+	    public String getDiet() {
+	        return diet;
+	    }
+
+	    public void setDiet(String diet) {
+	        this.diet = diet;
+	    }
+
 	    public String getPassword() {
 	        return password;
 	    }
 
 	    public void setPassword(String password) {
 	        this.password = password;
+	        
 	    }
-	
+	    
+	    public String getAllergies() {
+	        return allergies;
+	    }
+
+	    public void setAllergies(String allergies) {
+	        this.allergies = allergies;
+	    }
+
 }

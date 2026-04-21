@@ -27,6 +27,9 @@ public class LoginView extends Composite<LoginOverlay> {
 			String username  = event.getUsername();
 			String password  = event.getPassword();
 			
+			// make sure error state is reset for a fresh attempt
+			loginOverlay.setError(false);
+			
 			Optional<User> user = userRepository.findByUsername(username);
 			
 			if (user.isPresent() && user.get().getPassword().equals(password)) {
@@ -34,13 +37,11 @@ public class LoginView extends Composite<LoginOverlay> {
 				VaadinSession.getCurrent().setAttribute("user", user.get());
 				UI.getCurrent().navigate("main");
 			} else {
-				loginOverlay.setError(true);
 				Notification.show("Incorrect Username or Password");
+				UI.getCurrent().getPage().reload(); // refresh to reset overlay
 			}
 		});
 	
-	
-		
 		Button registerButton = new Button("Register", event -> {
             UI.getCurrent().navigate("register");
         });
@@ -50,5 +51,3 @@ public class LoginView extends Composite<LoginOverlay> {
 	
 
 	}
-
-
