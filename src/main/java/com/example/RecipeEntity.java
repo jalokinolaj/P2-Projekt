@@ -32,6 +32,9 @@ public class RecipeEntity {
   @Column(name = "directions",columnDefinition = "TEXT")
   private String directions;
 
+    @Column(name = "nutrition")
+    private String nutrition;
+
     public Integer getId() { return id; }
     public String getRecipeName() { return recipeName; }
     public String getTotalTime() { return totalTime; }
@@ -41,4 +44,5 @@ public class RecipeEntity {
     public String getCuisinePath() { return cuisinePath; }
     public String getImgSrc() { return imgSrc; }
     public String getDirections() {return directions;}
+    public String getNutrition() { return nutrition; }
 }
