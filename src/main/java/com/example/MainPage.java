@@ -241,7 +241,7 @@ public class MainPage extends VerticalLayout {
         ingredientField.setWidthFull();
         ingredientField.addClassName("search-field");
 
-        Button addBtn = new Button("Add");
+    Button addBtn = new Button("Add");
         addBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         addBtn.addClassName("add-btn");
         addBtn.addClickListener(e -> {
@@ -750,7 +750,7 @@ public class MainPage extends VerticalLayout {
         content.setPadding(false);
         content.setAlignItems(Alignment.CENTER);
 
-        // Read the user object from the session to display their username
+        // Read the user object from the session to display their profile info
         User user = (User) VaadinSession.getCurrent().getAttribute("user");
         if (user != null) {
             // Avatar circle showing the first letter of the username
@@ -760,6 +760,18 @@ public class MainPage extends VerticalLayout {
 
             H3 username = new H3("@" + user.getUsername());
             content.add(avatar, username);
+
+            // Show the diet preference saved during registration
+            Span diet = new Span("Diet: " + (user.getDiet() != null ? user.getDiet() : "None"));
+            diet.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            content.add(diet);
+
+            // Show the allergies saved during registration (stored as comma-separated string)
+            String allergiesRaw = user.getAllergies();
+            String allergiesDisplay = (allergiesRaw == null || allergiesRaw.isBlank()) ? "None" : allergiesRaw;
+            Span allergies = new Span("Allergies: " + allergiesDisplay);
+            allergies.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            content.add(allergies);
         } else {
             content.add(new Span("Not logged in."));
         }
