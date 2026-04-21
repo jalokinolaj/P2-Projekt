@@ -12,3 +12,7 @@
 node_modules/
 src/main/frontend/generated/
 vite.generated.ts
+
+# Local database dumps
+src/main/resources/data.sql
+src/main/resources/db.sql
