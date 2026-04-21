@@ -28,18 +28,41 @@ public class InventoryServices {
 	public Inventory upsertIngredient(String username, String ingredientName, Double quantity, String unit,
 			Double minimumQuantity, LocalDate expiryDate) {
 		// Upsert: update existing ingredient row for this user, otherwise create a new one.
-		Inventory item = inventoryRepository.findByUsernameAndIngredientNameIgnoreCase(username, ingredientName)
+		String trimmedIngredientName = ingredientName.trim();
+		String trimmedUnit = unit.trim();
+
+		Inventory item = inventoryRepository.findByUsernameAndIngredientNameIgnoreCase(username, trimmedIngredientName)
 				.orElseGet(Inventory::new);
 
 		item.setUsername(username);
-		item.setIngredientName(ingredientName.trim());
+		item.setIngredientName(trimmedIngredientName);
 		item.setQuantity(quantity);
-		item.setUnit(unit.trim());
+		item.setUnit(trimmedUnit);
+		// Keep normalized values in sync until dedicated unit conversion is introduced.
+		item.setNormalizedQuantity(quantity);
+		item.setNormalizedUnit(trimmedUnit);
 		item.setMinimumQuantity(minimumQuantity);
 		item.setExpiryDate(expiryDate);
 		item.setUpdatedAt(LocalDateTime.now());
 
 		return inventoryRepository.save(item);
+	}
+
+	public boolean updateQuantity(String username, Long id, Double quantity) {
+		if (quantity == null || quantity < 0.0) {
+			return false;
+		}
+
+		return inventoryRepository.findByIdAndUsername(id, username)
+				.map(item -> {
+					item.setQuantity(quantity);
+					// Keep normalized values in sync until dedicated unit conversion is introduced.
+					item.setNormalizedQuantity(quantity);
+					item.setUpdatedAt(LocalDateTime.now());
+					inventoryRepository.save(item);
+					return true;
+				})
+				.orElse(false);
 	}
 
 	public boolean deleteInventoryItem(Long id) {

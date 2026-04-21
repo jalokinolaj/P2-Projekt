@@ -6,6 +6,7 @@ import com.example.Inventory;
 import com.example.Services.InventoryServices;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
@@ -113,14 +114,57 @@ public class InventoryView extends VerticalLayout {
 		inventoryGrid.addColumn(item -> item.getExpiryDate() == null ? "-" : item.getExpiryDate().toString())
 				.setHeader("Expiry date");
 
-		inventoryGrid.addComponentColumn(item -> new Button("Delete", click -> {
-			inventoryServices.deleteInventoryItem(item.getId());
-			String username = (String) VaadinSession.getCurrent().getAttribute("username");
-			refreshData(username);
-		})).setHeader("Actions");
+		inventoryGrid.addComponentColumn(item -> {
+			Button editButton = new Button("Edit amount", click -> openEditAmountDialog(item));
+			Button deleteButton = new Button("Delete", click -> {
+				inventoryServices.deleteInventoryItem(item.getId());
+				String username = (String) VaadinSession.getCurrent().getAttribute("username");
+				refreshData(username);
+			});
+
+			return new HorizontalLayout(editButton, deleteButton);
+		}).setHeader("Actions");
 
 		inventoryGrid.setWidthFull();
 		return inventoryGrid;
+	}
+
+	private void openEditAmountDialog(Inventory item) {
+		String username = (String) VaadinSession.getCurrent().getAttribute("username");
+		if (username == null || username.isBlank()) {
+			Notification.show("Please login first.");
+			return;
+		}
+
+		Dialog dialog = new Dialog();
+		dialog.setHeaderTitle("Edit amount: " + item.getIngredientName());
+
+		NumberField newQuantity = new NumberField("New quantity");
+		newQuantity.setMin(0);
+		newQuantity.setValue(item.getQuantity());
+
+		Button cancelButton = new Button("Cancel", click -> dialog.close());
+		Button saveButton = new Button("Save", click -> {
+			Double qty = newQuantity.getValue();
+			if (qty == null || qty < 0.0) {
+				Notification.show("Quantity must be 0 or higher.");
+				return;
+			}
+
+			boolean updated = inventoryServices.updateQuantity(username, item.getId(), qty);
+			if (!updated) {
+				Notification.show("Could not update amount.");
+				return;
+			}
+
+			Notification.show("Amount updated.");
+			dialog.close();
+			refreshData(username);
+		});
+
+		dialog.add(new VerticalLayout(newQuantity));
+		dialog.getFooter().add(cancelButton, saveButton);
+		dialog.open();
 	}
 
 	private Grid<Inventory> configureRunOutGrid() {

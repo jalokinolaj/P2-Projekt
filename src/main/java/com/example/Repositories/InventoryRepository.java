@@ -13,4 +13,6 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 	List<Inventory> findByUsernameOrderByQuantityAsc(String username);
 
 	Optional<Inventory> findByUsernameAndIngredientNameIgnoreCase(String username, String ingredientName);
+
+	Optional<Inventory> findByIdAndUsername(Long id, String username);
 }
