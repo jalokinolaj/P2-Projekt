@@ -576,6 +576,14 @@ public class MainPage extends VerticalLayout {
 
         body.add(titleRow, catChip, metaRow, ingLabel, ingList);
         card.add(imageArea, body);
+        
+        card.getStyle().set("cursor", "pointer");
+
+        card.addClickListener(e -> {
+            UI.getCurrent().navigate("recipe/" + entity.getId());
+        });
+        
+        
         return card;
     }
 
