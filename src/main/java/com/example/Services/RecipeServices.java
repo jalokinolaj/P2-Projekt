@@ -1,11 +1,4 @@
 package com.example.Services;
-import com.example.Inventory;
-import com.example.RecipeIngredient;
-import com.example.Recipes;
-import com.example.Repositories.RecipeIngredientRepository;
-import com.example.Repositories.RecipesRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
@@ -14,6 +7,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.example.Inventory;
+import com.example.RecipeIngredient;
+import com.example.Recipes;
+import com.example.Repositories.RecipeIngredientRepository;
+import com.example.Repositories.RecipesRepository;
 
 @Service
 public class RecipeServices {
@@ -25,6 +27,9 @@ public class RecipeServices {
 
     @Autowired
     private InventoryServices inventoryServices;
+
+    @Autowired
+    private UnitConverterService unitConverterService;
 
     public List<Recipes> getAllRecipes() {
         return recipesRepository.findAll();
@@ -78,20 +83,27 @@ public class RecipeServices {
 
         for (RecipeIngredient requirement : requirements) {
             Inventory available = inventoryByIngredient.get(normalize(requirement.getIngredientName()));
-            Double required = requirement.getRequiredQuantity();
-            double needed = required == null ? 0.0 : required;
-            Double currentQuantity = available == null ? null : available.getQuantity();
+            UnitConverterService.ConversionResult requiredConversion =
+                    unitConverterService.normalize(requirement.getRequiredQuantity(), requirement.getUnit());
+            double needed = requiredConversion.normalizedQuantity();
+            String neededUnit = unitConverterService.normalizeUnitLabel(requiredConversion.normalizedUnit());
+
+            Double currentQuantity = available == null ? null : available.getNormalizedQuantity();
             double has = currentQuantity == null ? 0.0 : currentQuantity;
+            String hasUnit = available == null
+                    ? ""
+                    : unitConverterService.normalizeUnitLabel(available.getNormalizedUnit());
+            boolean sameUnit = available != null && !neededUnit.isBlank() && neededUnit.equals(hasUnit);
 
             // Ingredient counts as matched only if user has enough for this recipe.
-            if (has >= needed && needed > 0.0) {
+            if (sameUnit && has >= needed && needed > 0.0) {
                 matched++;
             } else {
                 missing.add(requirement.getIngredientName());
             }
 
             // Keep track of the most urgent ingredient to consume for this recipe.
-            if (available != null) {
+            if (available != null && sameUnit) {
                 double urgency = computeUrgency(available, needed);
                 if (urgency > highestUrgency) {
                     highestUrgency = urgency;
@@ -107,10 +119,12 @@ public class RecipeServices {
     }
 
     private double computeUrgency(Inventory inventory, double requiredQuantity) {
-        Double inventoryQuantity = inventory.getQuantity();
+        Double inventoryQuantity = inventory.getNormalizedQuantity();
         Double inventoryMinimum = inventory.getMinimumQuantity();
         double quantity = inventoryQuantity == null ? 0.0 : inventoryQuantity;
-        double minimum = inventoryMinimum == null ? 0.0 : inventoryMinimum;
+        double minimum = inventoryMinimum == null
+            ? 0.0
+            : unitConverterService.normalize(inventoryMinimum, inventory.getUnit()).normalizedQuantity();
         // Risk 1: This recipe consumes a large share of what is left in stock.
         double stockRisk = (requiredQuantity <= 0.0 || quantity <= 0.0)
                 ? 0.0
