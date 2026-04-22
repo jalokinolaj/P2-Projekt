@@ -535,6 +535,46 @@ public class MainPage extends VerticalLayout {
         return card;
     }
 
+    private String resolveDiet(User user) {
+        if (user == null) {
+            return "None";
+        }
+
+        String diet = invokeStringGetter(user, "getDiet");
+        if (diet == null || diet.isBlank()) {
+            diet = invokeStringGetter(user, "getDietPreference");
+        }
+        if (diet == null || diet.isBlank()) {
+            diet = invokeStringGetter(user, "getDietaryPreference");
+        }
+        if (diet == null || diet.isBlank()) {
+            diet = readStringField(user, "diet");
+        }
+
+        return (diet == null || diet.isBlank()) ? "None" : diet;
+    }
+
+    private String invokeStringGetter(User user, String methodName) {
+        try {
+            java.lang.reflect.Method method = user.getClass().getMethod(methodName);
+            Object value = method.invoke(user);
+            return value instanceof String ? (String) value : null;
+        } catch (ReflectiveOperationException ex) {
+            return null;
+        }
+    }
+
+    private String readStringField(User user, String fieldName) {
+        try {
+            java.lang.reflect.Field field = user.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            Object value = field.get(user);
+            return value instanceof String ? (String) value : null;
+        } catch (ReflectiveOperationException ex) {
+            return null;
+        }
+    }
+
     /**
      * Opens a modal dialog showing the logged-in user's profile information.
      * Displays the username, number of ingredients currently added, and a logout button.
@@ -562,7 +602,8 @@ public class MainPage extends VerticalLayout {
             content.add(avatar, username);
 
             // Show the diet preference saved during registration
-            Span diet = new Span("Diet: " + (user.getDiet() != null ? user.getDiet() : "None"));
+            String dietDisplay = resolveDiet(user);
+            Span diet = new Span("Diet: " + dietDisplay);
             diet.getStyle().set("color", "var(--lumo-secondary-text-color)");
             content.add(diet);
 

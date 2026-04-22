@@ -4,19 +4,15 @@ import java.util.Optional;
 
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.login.LoginOverlay;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
-
 @Route("")
 public class LoginView extends Composite<LoginOverlay> {
-	private final UserRepository userRepository;
-	
 	public LoginView(UserRepository userRepository) {
-		this.userRepository = userRepository;
-		
 		LoginOverlay loginOverlay = getContent();
 		loginOverlay.setTitle("Recipe App");
 		loginOverlay.setDescription("Find new recipes");
@@ -31,6 +27,7 @@ public class LoginView extends Composite<LoginOverlay> {
 			if (user.isPresent() && user.get().getPassword().equals(password)) {
 				loginOverlay.setError(false);
 				VaadinSession.getCurrent().setAttribute("user", user.get());
+				VaadinSession.getCurrent().setAttribute("username", user.get().getUsername());
 				UI.getCurrent().navigate("main");
 			} else {
 				loginOverlay.setError(true);
@@ -44,6 +41,4 @@ public class LoginView extends Composite<LoginOverlay> {
 		
 		loginOverlay.getFooter().add(registerButton);
 	}
-	
-
-	}
+}

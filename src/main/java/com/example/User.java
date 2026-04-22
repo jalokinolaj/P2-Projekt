@@ -24,7 +24,7 @@ public class User {
 		@Column(nullable = false)
 		private String diet;
 		
-		@Column(nullable = false)
+		@Column(nullable = true)
 		private String allergies;
 
 
@@ -58,6 +58,14 @@ public class User {
 	        this.password = password;
 	        
 	    }
+
+		public String getDiet() {
+			return diet;
+		}
+
+		public void setDiet(String diet) {
+			this.diet = diet;
+		}
 	    
 	    public String getAllergies() {
 	        return allergies;
