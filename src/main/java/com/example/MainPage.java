@@ -1,14 +1,10 @@
 package com.example;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 // Written by GitHub Copilot: needed for safe lowercase URL protocol checks.
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -219,7 +215,7 @@ public class MainPage extends VerticalLayout {
         ingredientField.setWidthFull();
         ingredientField.addClassName("search-field");
 
-        Button addBtn = new Button("Add");
+    Button addBtn = new Button("Add");
         addBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         addBtn.addClassName("add-btn");
         addBtn.addClickListener(e -> {
@@ -365,7 +361,7 @@ public class MainPage extends VerticalLayout {
         // Step 3: Category filter — map the DB's cuisine_path to our category labels
         if (!currentCategory.equals("All")) {
             results = results.stream()
-                .filter(r -> mapCategory(r.getCuisinePath()).equals(currentCategory))
+                .filter(r -> MainPageRecipeMethods.mapCategory(r.getCuisinePath()).equals(currentCategory))
                 .collect(Collectors.toList());
         }
 
@@ -420,23 +416,6 @@ public class MainPage extends VerticalLayout {
      * @param cuisinePath the raw cuisine_path string from the database
      * @return one of: "Dessert", "Breakfast", "Appetizer", "Lunch", "Dinner"
      */
-    private String mapCategory(String cuisinePath) {
-        if (cuisinePath == null) return "Dinner";
-        String p = cuisinePath.toLowerCase();
-        if (p.contains("dessert") || p.contains("cake") || p.contains("cookie")
-                || p.contains("pie") || p.contains("pudding") || p.contains("cobbler")
-                || p.contains("candy") || p.contains("brownie") || p.contains("fudge")
-                || p.contains("shortcake") || p.contains("ice cream"))
-            return "Dessert";
-        if (p.contains("breakfast") || p.contains("brunch") || p.contains("bread"))
-            return "Breakfast";
-        if (p.contains("appetizer") || p.contains("snack") || p.contains("dip")
-                || p.contains("spread"))
-            return "Appetizer";
-        if (p.contains("salad") || p.contains("lunch"))
-            return "Lunch";
-        return "Dinner";
-    }
 
     /**
      * Parses a human-readable time string (e.g. "1 hrs 25 mins", "45 mins") into total minutes.
@@ -445,34 +424,13 @@ public class MainPage extends VerticalLayout {
      * @param entity the recipe entity containing the time fields
      * @return total time in minutes, or 0 if the time string is missing or unparseable
      */
-    private int parseMinutes(RecipeEntity entity) {
-        String timeStr = entity.getTotalTime() != null ? entity.getTotalTime() : entity.getCookTime();
-        if (timeStr == null || timeStr.isEmpty()) return 0;
-        int total = 0;
-        Matcher hours = Pattern.compile("(\\d+)\\s*hr").matcher(timeStr);
-        if (hours.find()) total += Integer.parseInt(hours.group(1)) * 60;
-        Matcher mins = Pattern.compile("(\\d+)\\s*min").matcher(timeStr);
-        if (mins.find()) total += Integer.parseInt(mins.group(1));
-        return total;
-    }
 
     /**
      * Parses the nutrition text to extract the protein amount.
      * @param nutritionText the raw nutrition text from the database
      * @return a string with the protein amount or empty if not found
      */    
-    private String parseNutrition(String nutritionText){
-        if (nutritionText == null) return "";
-        String target = "Protein";
-        Pattern pattern = Pattern.compile(target + ":?\\s*(\\d+\\.?\\d*)\\s*g", Pattern.CASE_INSENSITIVE);
-        Matcher match = pattern.matcher(nutritionText);
-        if (match.find()) {
-            return "🍗 " + match.group(1) + "g protein";
-        } else {
-            return "";
-        }
-    } 
-
+   
 
 
     /**
@@ -485,44 +443,14 @@ public class MainPage extends VerticalLayout {
      * @param ingredientsText the raw ingredients text from the database
      * @return array of trimmed ingredient strings (max 8 entries)
      */
-    private String[] parseIngredients(String ingredientsText) {
-        if (ingredientsText == null) return new String[0];
-        return Arrays.stream(ingredientsText.split(","))
-            .map(String::trim)
-            .filter(s -> !s.isEmpty())
-            .limit(8)
-            .toArray(String[]::new);
-    }
+
 
     /**
      * Normalizes image URLs from the database so they work reliably in the browser.
      * Handles common stored variants like quoted strings and escaped slashes.
      */
     // Written by GitHub Copilot: URL normalization helper for robust external image loading.
-    private String normalizeImageUrl(String rawUrl) {
-        if (rawUrl == null) return null;
-
-        String url = rawUrl.trim();
-        if (url.isEmpty()) return null;
-
-        if ((url.startsWith("\"") && url.endsWith("\"")) || (url.startsWith("'") && url.endsWith("'"))) {
-            url = url.substring(1, url.length() - 1).trim();
-        }
-
-        url = url.replace("\\/", "/");
-        url = url.replace(" ", "%20");
-
-        if (url.startsWith("//")) {
-            url = "https:" + url;
-        }
-
-        String lower = url.toLowerCase(Locale.ROOT);
-        if (!(lower.startsWith("http://") || lower.startsWith("https://") || lower.startsWith("data:image/"))) {
-            return null;
-        }
-
-        return url;
-    }
+  
 
     /**
      * Builds a single recipe card Div to be placed in the recipe grid.
@@ -545,7 +473,7 @@ public class MainPage extends VerticalLayout {
         Div imageArea = new Div();
         imageArea.addClassName("recipe-image");
         // Written by GitHub Copilot: normalize DB URL before rendering to the browser.
-        String imageUrl = normalizeImageUrl(entity.getImgSrc());
+        String imageUrl = MainPageRecipeMethods.normalizeImageUrl(entity.getImgSrc());
         if (imageUrl != null) {
             Image img = new Image(imageUrl, entity.getRecipeName());
             img.addClassName("recipe-photo");
@@ -576,13 +504,13 @@ public class MainPage extends VerticalLayout {
         titleRow.add(titleEl, matchBadge);
 
         // Category chip derived from the cuisine_path in the database
-        Span catChip = new Span(mapCategory(entity.getCuisinePath()));
+        Span catChip = new Span(MainPageRecipeMethods.mapCategory(entity.getCuisinePath()));
         catChip.addClassName("category-chip");
 
         // Meta row: cook time and serving count
         Div metaRow = new Div();
         metaRow.addClassName("meta-row");
-        int minutes = parseMinutes(entity);
+        int minutes = MainPageRecipeMethods.parseMinutes(entity);
         metaRow.add(new Span(minutes > 0 ? "⏱ " + minutes + " min" : "⏱ N/A"));
         metaRow.add(new Span("👥 " + (entity.getServings() != null ? entity.getServings() : "?") + " servings"));
 
@@ -590,11 +518,11 @@ public class MainPage extends VerticalLayout {
         Paragraph ingLabel = new Paragraph("Ingredients:");
         ingLabel.addClassName("ingredients-label");
 
-        String[] ingredients = parseIngredients(entity.getIngredients());
+        String[] ingredients = MainPageRecipeMethods.parseIngredients(entity.getIngredients());
         Span ingList = new Span(String.join(", ", ingredients));
         ingList.addClassName("ingredients-list");
 
-        body.add(titleRow, catChip, metaRow, ingLabel, ingList, new Span(parseNutrition(entity.getNutrition())));
+        body.add(titleRow, catChip, metaRow, ingLabel, ingList, new Span(MainPageRecipeMethods.parseNutrition(entity.getNutrition())));
         card.add(imageArea, body);
         
         card.getStyle().set("cursor", "pointer");
@@ -622,7 +550,7 @@ public class MainPage extends VerticalLayout {
         content.setPadding(false);
         content.setAlignItems(Alignment.CENTER);
 
-        // Read the user object from the session to display their username
+        // Read the user object from the session to display their profile info
         User user = (User) VaadinSession.getCurrent().getAttribute("user");
         if (user != null) {
             // Avatar circle showing the first letter of the username
@@ -632,6 +560,18 @@ public class MainPage extends VerticalLayout {
 
             H3 username = new H3("@" + user.getUsername());
             content.add(avatar, username);
+
+            // Show the diet preference saved during registration
+            Span diet = new Span("Diet: " + (user.getDiet() != null ? user.getDiet() : "None"));
+            diet.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            content.add(diet);
+
+            // Show the allergies saved during registration (stored as comma-separated string)
+            String allergiesRaw = user.getAllergies();
+            String allergiesDisplay = (allergiesRaw == null || allergiesRaw.isBlank()) ? "None" : allergiesRaw;
+            Span allergies = new Span("Allergies: " + allergiesDisplay);
+            allergies.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            content.add(allergies);
         } else {
             content.add(new Span("Not logged in."));
         }
