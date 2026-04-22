@@ -25,19 +25,19 @@ public class ProfileView extends VerticalLayout {
 
     private static final String[] EU14_ALLERGENS = {
             "Gluten",
-            "Krebsdyr",
-            "Æg",
-            "Fisk",
-            "Jordnødder",
-            "Soja",
-            "Mælk",
-            "Nødder",
-            "Selleri",
-            "Sennep",
-            "Sesam",
-            "Svovldioxid",
+            "Shellfish",
+            "Egg",
+            "Fish",
+            "Peanuts",
+            "Soybeans",
+            "Milk",
+            "Nuts",
+            "Celery",
+            "Mustard",
+            "Sesame",
+            "Sulphur dioxide",
             "Lupin",
-            "Bløddyr"
+            "Mollusc"
     };
 
     public ProfileView(UserRepository userRepository) {
