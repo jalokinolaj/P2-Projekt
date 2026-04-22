@@ -21,16 +21,12 @@ public class User {
 	    @Column(nullable = false)
 	    private String password;
 
-		@Column(nullable = false)
-		private String diet;
-
 	    public User() {
 	    }
 
-	    public User(String username, String password, String diet) {
+	    public User(String username, String password) {
 	        this.username = username;
 	        this.password = password;
-	        this.diet = diet;
 	    }
 
 	    public Long getId() {
@@ -45,14 +41,6 @@ public class User {
 	        this.username = username;
 	    }
 
-	    public String getDiet() {
-	        return diet;
-	    }
-
-	    public void setDiet(String diet) {
-	        this.diet = diet;
-	    }
-
 	    public String getPassword() {
 	        return password;
 	    }
@@ -60,5 +48,5 @@ public class User {
 	    public void setPassword(String password) {
 	        this.password = password;
 	    }
-
+	
 }
