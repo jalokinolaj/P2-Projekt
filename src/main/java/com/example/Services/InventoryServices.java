@@ -1,19 +1,24 @@
 package com.example.Services;
 
-import com.example.Inventory;
-import com.example.Repositories.InventoryRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import org.springframework.dao.EmptyResultDataAccessException;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
+
+import com.example.Inventory;
+import com.example.Repositories.InventoryRepository;
 
 @Service
 public class InventoryServices {
 
 	@Autowired
 	private InventoryRepository inventoryRepository;
+
+	@Autowired
+	private UnitConverterService unitConverterService;
 
 	public List<Inventory> getInventoryForUser(String username) {
 		// Main inventory list: sorted by expiry first so older items are visible sooner.
@@ -29,7 +34,8 @@ public class InventoryServices {
 			Double minimumQuantity, LocalDate expiryDate) {
 		// Upsert: update existing ingredient row for this user, otherwise create a new one.
 		String trimmedIngredientName = ingredientName.trim();
-		String trimmedUnit = unit.trim();
+		String trimmedUnit = unitConverterService.normalizeUnitLabel(unit);
+		UnitConverterService.ConversionResult conversion = unitConverterService.normalize(quantity, trimmedUnit);
 
 		Inventory item = inventoryRepository.findByUsernameAndIngredientNameIgnoreCase(username, trimmedIngredientName)
 				.orElseGet(Inventory::new);
@@ -38,9 +44,8 @@ public class InventoryServices {
 		item.setIngredientName(trimmedIngredientName);
 		item.setQuantity(quantity);
 		item.setUnit(trimmedUnit);
-		// Keep normalized values in sync until dedicated unit conversion is introduced.
-		item.setNormalizedQuantity(quantity);
-		item.setNormalizedUnit(trimmedUnit);
+		item.setNormalizedQuantity(conversion.normalizedQuantity());
+		item.setNormalizedUnit(conversion.normalizedUnit());
 		item.setMinimumQuantity(minimumQuantity);
 		item.setExpiryDate(expiryDate);
 		item.setUpdatedAt(LocalDateTime.now());
@@ -55,9 +60,10 @@ public class InventoryServices {
 
 		return inventoryRepository.findByIdAndUsername(id, username)
 				.map(item -> {
+					UnitConverterService.ConversionResult conversion = unitConverterService.normalize(quantity, item.getUnit());
 					item.setQuantity(quantity);
-					// Keep normalized values in sync until dedicated unit conversion is introduced.
-					item.setNormalizedQuantity(quantity);
+					item.setNormalizedQuantity(conversion.normalizedQuantity());
+					item.setNormalizedUnit(conversion.normalizedUnit());
 					item.setUpdatedAt(LocalDateTime.now());
 					inventoryRepository.save(item);
 					return true;

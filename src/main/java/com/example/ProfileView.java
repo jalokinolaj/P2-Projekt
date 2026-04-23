@@ -24,7 +24,7 @@ public class ProfileView extends VerticalLayout {
     private User currentUser;
     private CheckboxGroup<String> allergies;
 
-    private static final String[] EU14_ALLERGENS = {
+        private static final String[] EU14_ALLERGENS = {
             "Gluten",
             "Crustaceans",
             "Eggs",

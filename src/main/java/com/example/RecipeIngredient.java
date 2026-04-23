@@ -23,10 +23,10 @@ public class RecipeIngredient {
     // Links this row to exactly one recipe.
     private Recipes recipe;
 
-    @Column(name = "ingredient_name", nullable = false)
+    @Column(name = "ingredient_name", nullable = true)
     private String ingredientName;
 
-    @Column(name = "required_quantity", nullable = false)
+    @Column(name = "required_quantity", nullable = true)
     // Quantity needed to cook the recipe once.
     private Double requiredQuantity;
 
