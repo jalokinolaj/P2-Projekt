@@ -44,7 +44,7 @@ public class RegisterView extends Composite<VerticalLayout> {
 		PasswordField password2 = new PasswordField("Confirm Password");
 		Select<String> diet = new Select<>();
 		diet.setLabel("Diet");
-		diet.setItems("none", "Vegan", "Vegetarian", "Pescatarian", "Omnivore");	
+		diet.setItems("none", "Vegan", "Vegetarian", "Pescatarian", "Omnivore");
 		diet.setValue("none");
 		
 	CheckboxGroup<String> allergies = new CheckboxGroup<>();

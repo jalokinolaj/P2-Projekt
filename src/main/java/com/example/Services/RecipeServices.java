@@ -56,8 +56,9 @@ public class RecipeServices {
                         .comparingDouble(RecipeRecommendation::matchPercent).reversed()
                         .thenComparingDouble(RecipeRecommendation::urgencyScore).reversed()
                     .thenComparingDouble(r -> {
-                        Double rating = r.recipe().getRating();
-                            return rating == null ? 0.0 : rating;
+                        // rating is stored as text in DB, parse it safely
+                        try { return Double.parseDouble(r.recipe().getRating()); }
+                        catch (Exception e) { return 0.0; }
                     })
                         .reversed())
                 .toList();

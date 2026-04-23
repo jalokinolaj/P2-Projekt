@@ -26,6 +26,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -55,7 +56,7 @@ public class MainPage extends VerticalLayout {
     // Tracks the current text in the recipe name search field
     private String nameSearchQuery = "";
 
-    // List of ingredients the user has added via the ingredient search bar
+    // Ingredients the user has typed and added for filtering — lives only in memory, never saved
     private final List<String> addedIngredients = new ArrayList<>();
 
     // The row of ingredient chip tags shown below the ingredient search field
@@ -241,13 +242,13 @@ public class MainPage extends VerticalLayout {
         ingredientField.setWidthFull();
         ingredientField.addClassName("search-field");
 
-    Button addBtn = new Button("Add");
+        Button addBtn = new Button("Add");
         addBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         addBtn.addClassName("add-btn");
         addBtn.addClickListener(e -> {
             String val = ingredientField.getValue().trim().toLowerCase();
             if (!val.isEmpty() && !addedIngredients.contains(val)) {
-                // Add the ingredient to the filter list, update the chip row and grid
+                // Add to in-memory filter list only — nothing is saved to the database
                 addedIngredients.add(val);
                 ingredientField.clear();
                 refreshChips();
@@ -272,10 +273,6 @@ public class MainPage extends VerticalLayout {
         return searchCard;
     }
 
-    /**
-     * Redraws the ingredient chips row from scratch based on the current addedIngredients list.
-     * Each chip shows the ingredient name and an "×" button to remove it from the filter.
-     */
     private void refreshChips() {
         ingredientChips.removeAll();
         ingredientChips.setVisible(!addedIngredients.isEmpty());
@@ -288,7 +285,7 @@ public class MainPage extends VerticalLayout {
             remove.addClassName("chip-remove");
             remove.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
 
-            // Clicking "×" removes this ingredient from the filter and refreshes the grid
+            // Clicking × removes this ingredient from the in-memory filter
             remove.addClickListener(e -> {
                 addedIngredients.remove(ing);
                 refreshChips();
@@ -377,9 +374,7 @@ public class MainPage extends VerticalLayout {
 
         List<RecipeEntity> results;
 
-        // Step 1: Ingredient filter
-        // Use the DB to fetch recipes containing the first ingredient (faster than scanning all),
-        // then filter in memory for each additional ingredient.
+        // Step 1: Ingredient filter — uses the in-memory addedIngredients list
         if (!addedIngredients.isEmpty()) {
             results = recipeRepository.findByIngredient(addedIngredients.get(0));
             for (int i = 1; i < addedIngredients.size(); i++) {
@@ -390,7 +385,6 @@ public class MainPage extends VerticalLayout {
                     .collect(Collectors.toList());
             }
         } else {
-            // No ingredient filter — start with the full cached recipe list
             results = new ArrayList<>(cachedRecipes);
         }
 
@@ -549,7 +543,7 @@ public class MainPage extends VerticalLayout {
      * Parses the nutrition text to extract the protein amount.
      * @param nutritionText the raw nutrition text from the database
      * @return a string with the protein amount or empty if not found
-     */    
+     */
     private String parseNutrition(String nutritionText){
         if (nutritionText == null) return "";
         String target = "Protein";
@@ -560,7 +554,7 @@ public class MainPage extends VerticalLayout {
         } else {
             return "";
         }
-    } 
+    }
 
 
 
@@ -776,13 +770,16 @@ public class MainPage extends VerticalLayout {
             content.add(new Span("Not logged in."));
         }
 
-        Span ingCount = new Span("Ingredients added: " + addedIngredients.size());
-        ingCount.getStyle().set("color", "var(--lumo-secondary-text-color)");
-        content.add(ingCount);
         Button inventoryBtn = new Button("Go to Inventory", e -> {
             dialog.close();
             UI.getCurrent().navigate("inventory");
         });
+
+        Button profileViewBtn = new Button("Go to profile", e -> {
+            dialog.close();
+            UI.getCurrent().navigate("profile");
+        });
+        
         // Logout: close the Vaadin session and navigate back to the login page
         Button logoutBtn = new Button("Logout", VaadinIcon.SIGN_OUT.create(), e -> {
             VaadinSession.getCurrent().close();
@@ -797,7 +794,7 @@ public class MainPage extends VerticalLayout {
         closeBtn.setWidthFull();
 
         inventoryBtn.setWidthFull();
-        content.add(inventoryBtn, logoutBtn, closeBtn);
+        content.add(profileViewBtn, inventoryBtn, logoutBtn, closeBtn);
         dialog.add(content);
         dialog.open();
     }

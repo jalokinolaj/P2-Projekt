@@ -14,6 +14,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import java.util.Set;
+
 @Route("profile")
 public class ProfileView extends VerticalLayout {
 
@@ -25,32 +26,32 @@ public class ProfileView extends VerticalLayout {
 
     private static final String[] EU14_ALLERGENS = {
             "Gluten",
-            "Krebsdyr",
-            "Æg",
-            "Fisk",
-            "Jordnødder",
-            "Soja",
-            "Mælk",
-            "Nødder",
-            "Selleri",
-            "Sennep",
-            "Sesam",
-            "Svovldioxid",
+            "Crustaceans",
+            "Eggs",
+            "Fish",
+            "Peanuts",
+            "Soy",
+            "Milk",
+            "Nuts",
+            "Celery",
+            "Mustard",
+            "Sesame",
+            "Sulphur dioxide",
             "Lupin",
-            "Bløddyr"
+            "Molluscs"
     };
 
     public ProfileView(UserRepository userRepository) {
         this.userRepository = userRepository;
 
-        String loggedInUsername = (String) VaadinSession.getCurrent().getAttribute("username");
+        User sessionUser = (User) VaadinSession.getCurrent().getAttribute("user");
 
-        if (loggedInUsername == null) {
+        if (sessionUser == null) {
             add(new H2("You are not logged in."));
             return;
         }
 
-        Optional<User> optionalUser = userRepository.findByUsername(loggedInUsername);
+        Optional<User> optionalUser = userRepository.findByUsername(sessionUser.getUsername());
 
         if (optionalUser.isEmpty()) {
             add(new H2("User not found."));
@@ -65,12 +66,12 @@ public class ProfileView extends VerticalLayout {
 
         Select<String> diet = new Select<>();
         diet.setLabel("Dietary Preference");
-        diet.setItems("none", "Vegan", "Vegetarian", "Pescatarian", "Omnivore");
+        diet.setItems("None", "Vegan", "Vegetarian", "Pescatarian", "Omnivore");
 
         allergies = new CheckboxGroup<>();
-        allergies.setLabel("Allergener (EU-14)");
+        allergies.setLabel("Allergens (EU-14)");
         allergies.setItems(EU14_ALLERGENS);
-        
+
         Button saveButton = new Button("Save Changes", event -> saveProfile());
 
         FormLayout formLayout = new FormLayout();
@@ -80,11 +81,13 @@ public class ProfileView extends VerticalLayout {
         binder.bind(diet, User::getDiet, User::setDiet);
 
         binder.readBean(currentUser);
-        
+
+        // Pre-select the user's saved allergies if they have any
         if (currentUser.getAllergies() != null && !currentUser.getAllergies().isBlank()) {
             allergies.setValue(Set.of(currentUser.getAllergies().split(",")));
-            
-        add(title, formLayout, saveButton);}
+        }
+
+        add(title, formLayout, saveButton);
     }
 
     private void saveProfile() {
@@ -92,11 +95,12 @@ public class ProfileView extends VerticalLayout {
             binder.writeBean(currentUser);
             currentUser.setAllergies(String.join(",", allergies.getValue()));
             userRepository.save(currentUser);
-            VaadinSession.getCurrent().setAttribute("username", currentUser.getUsername());
+            // Store the full updated User object in session (not just the username string)
+            VaadinSession.getCurrent().setAttribute("user", currentUser);
 
             Notification.show("Profile updated");
         } catch (Exception e) {
-            Notification.show("Error saving profile"+ e.getMessage());
+            Notification.show("Error saving profile: " + e.getMessage());
         }
     }
-}		
+}

@@ -22,7 +22,9 @@ public class RecipeViewsGrid extends VerticalLayout {
 
     public RecipeViewsGrid(RecipeServices recipeServices) {
         this.grid = new Grid<>(RecipeRecommendation.class, false);
-        this.username = (String) VaadinSession.getCurrent().getAttribute("username");
+        // Session stores a User object — extract the username string from it
+        com.example.User sessionUser = (com.example.User) VaadinSession.getCurrent().getAttribute("user");
+        this.username = sessionUser != null ? sessionUser.getUsername() : null;
 
         // Recommendations depend on user inventory, so require a logged-in user.
         if (this.username == null || this.username.isBlank()) {
