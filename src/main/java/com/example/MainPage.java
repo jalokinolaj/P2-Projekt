@@ -2,9 +2,6 @@ package com.example;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -515,25 +512,7 @@ public class MainPage extends VerticalLayout {
      * Parses the nutrition text to extract the protein amount.
      * @param nutritionText the raw nutrition text from the database
      * @return a string with the protein amount or empty if not found
-<<<<<<< HEAD
-     */
-    private String parseNutrition(String nutritionText){
-        if (nutritionText == null) return "";
-        String target = "Protein";
-        Pattern pattern = Pattern.compile(target + ":?\\s*(\\d+\\.?\\d*)\\s*g", Pattern.CASE_INSENSITIVE);
-        Matcher match = pattern.matcher(nutritionText);
-        if (match.find()) {
-            return "🍗 " + match.group(1) + "g protein";
-        } else {
-            return "";
-        }
-    }
-
-=======
      */ 
-
->>>>>>> 964bedca4f4675e2e05c64fdec6413598e6afa6e
-
 
     /**
      * Splits the raw ingredients string (a comma-separated list of ingredient descriptions)
@@ -552,7 +531,7 @@ public class MainPage extends VerticalLayout {
      * Handles common stored variants like quoted strings and escaped slashes.
      */
     // Written by GitHub Copilot: URL normalization helper for robust external image loading.
-  
+
 
     /**
      * Builds a single recipe card Div to be placed in the recipe grid.
