@@ -66,6 +66,12 @@ public class MainPage extends VerticalLayout {
     // Spring Data JPA repository used to query the recipes table
     private final RecipeRepository recipeRepository;
 
+    // Matches an optional leading quantity + unit so "2 cups flour" → "flour", "500g chicken" → "chicken"
+    private static final Pattern QUANTITY_PREFIX = Pattern.compile(
+        "^\\d[\\d./]*\\s*(?:g|kg|ml|l|oz|lbs?|cups?|tbsps?|tsps?|tablespoons?|teaspoons?|pounds?|ounces?|cloves?|pieces?|slices?|cans?|bunche?s?|sprigs?|stalks?|leaves?|heads?)?\\s+(.+)$",
+        Pattern.CASE_INSENSITIVE
+    );
+
     // All recipes loaded from the database at startup, used for in-memory filtering
     private final List<RecipeEntity> cachedRecipes;
 
@@ -214,7 +220,7 @@ public class MainPage extends VerticalLayout {
         searchRow.setSpacing(true);
 
         TextField ingredientField = new TextField();
-        ingredientField.setPlaceholder("Enter an ingredient (e.g., tomato, chicken, garlic)");
+        ingredientField.setPlaceholder("Enter an ingredient, optionally with amount (e.g., 2 cups flour, 500g chicken)");
         ingredientField.setPrefixComponent(VaadinIcon.SEARCH.create());
         ingredientField.setWidthFull();
         ingredientField.addClassName("search-field");
@@ -224,7 +230,8 @@ public class MainPage extends VerticalLayout {
         addBtn.addClassName("add-btn");
         addBtn.addClickListener(e -> {
             String val = ingredientField.getValue().trim().toLowerCase();
-            if (!val.isEmpty() && !addedIngredients.contains(val)) {
+            String searchKey = extractIngredientName(val);
+            if (!val.isEmpty() && addedIngredients.stream().noneMatch(i -> extractIngredientName(i).equals(searchKey))) {
                 // Add the ingredient to the filter list, update the chip row and grid
                 addedIngredients.add(val);
                 ingredientField.clear();
@@ -341,9 +348,9 @@ public class MainPage extends VerticalLayout {
         // Use the DB to fetch recipes containing the first ingredient (faster than scanning all),
         // then filter in memory for each additional ingredient.
         if (!addedIngredients.isEmpty()) {
-            results = recipeRepository.findByIngredient(addedIngredients.get(0));
+            results = recipeRepository.findByIngredient(extractIngredientName(addedIngredients.get(0)));
             for (int i = 1; i < addedIngredients.size(); i++) {
-                final String ing = addedIngredients.get(i);
+                final String ing = extractIngredientName(addedIngredients.get(i));
                 results = results.stream()
                     .filter(r -> r.getIngredients() != null &&
                                 r.getIngredients().toLowerCase().contains(ing.toLowerCase()))
@@ -407,9 +414,29 @@ public class MainPage extends VerticalLayout {
         if (addedIngredients.isEmpty() || entity.getIngredients() == null) return 0;
         String ingText = entity.getIngredients().toLowerCase();
         long matches = addedIngredients.stream()
-            .filter(ing -> ingText.contains(ing.toLowerCase()))
+            .filter(ing -> ingText.contains(extractIngredientName(ing).toLowerCase()))
             .count();
         return (int) Math.round((double) matches / addedIngredients.size() * 100);
+    }
+
+    /**
+     * Strips a leading quantity + optional unit from a user-typed ingredient string so
+     * that only the ingredient name is used for matching against the database.
+     *
+     * Examples:
+     *   "2 cups flour"   → "flour"
+     *   "500g chicken"   → "chicken"
+     *   "1 tsp salt"     → "salt"
+     *   "3 eggs"         → "eggs"
+     *   "flour"          → "flour"  (no quantity prefix — returned unchanged)
+     *
+     * @param input the raw ingredient string (possibly including an amount and unit)
+     * @return the ingredient name with any leading quantity/unit stripped
+     */
+    private String extractIngredientName(String input) {
+        if (input == null) return "";
+        Matcher m = QUANTITY_PREFIX.matcher(input.trim());
+        return m.matches() ? m.group(1).trim() : input.trim();
     }
 
     /**
