@@ -392,6 +392,18 @@ public class MainPage extends VerticalLayout {
                 .collect(Collectors.toList());
         }
 
+       // Step 2.5: Diet filter based on logged-in user's preference
+        User sessionUser = (User) VaadinSession.getCurrent().getAttribute("user");
+
+        if (sessionUser != null && sessionUser.getDiet() != null && !sessionUser.getDiet().isBlank()) {
+            String userDiet = sessionUser.getDiet().trim();
+
+            results = results.stream()
+                .filter(recipe -> matchesDiet(recipe, userDiet))
+                .collect(Collectors.toList());
+        }
+        
+        
         // Step 3: Category filter — map the DB's cuisine_path to our category labels
         if (!currentCategory.equals("All")) {
             results = results.stream()
@@ -427,8 +439,73 @@ public class MainPage extends VerticalLayout {
             int matchPercent = fridgeModeEnabled ? calculateInventoryMatch(entity) : calculateMatch(entity);
             recipeGrid.add(createRecipeCard(entity, matchPercent));
         }
+    
     }
+    
+    // Checks if a recipe matches the user's diet preference based on its ingredients
+ // Checks if a recipe matches the user's selected diet
+    private boolean matchesDiet(RecipeEntity recipe, String diet) {
+        // If no diet is chosen, allow all recipes
+        if (diet == null || diet.isBlank()) {
+            return true;
+        }
 
+        // Convert diet to lowercase so comparison is easier
+        String userDiet = diet.toLowerCase(Locale.ROOT).trim();
+
+        // "none" and "omnivore" mean no filtering
+        if (userDiet.equals("none") || userDiet.equals("omnivore")) {
+            return true;
+        }
+
+        // Get recipe ingredients as lowercase text
+        String ingredients = recipe.getIngredients() == null
+                ? ""
+                : recipe.getIngredients().toLowerCase(Locale.ROOT);
+
+        // VEGAN: no meat, fish, dairy, eggs, honey
+        if (userDiet.equals("vegan")) {
+            return !containsAny(ingredients,
+                    "chicken", "beef", "pork", "bacon", "ham", "turkey",
+                    "fish", "salmon", "tuna", "shrimp", "prawn",
+                    "egg", "eggs",
+                    "milk", "cheese", "butter", "cream", "yogurt", "honey", "lamb", "lobster");
+        }
+
+        // VEGETARIAN: no meat or fish
+        if (userDiet.equals("vegetarian")) {
+            return !containsAny(ingredients,
+                    "chicken", "beef", "pork", "bacon", "ham", "turkey",
+                    "fish", "salmon", "tuna", "shrimp", "prawn", "lamb", "lobster");
+        }
+
+        // PESCATARIAN: no meat, but fish is allowed
+        if (userDiet.equals("pescatarian")) {
+            return !containsAny(ingredients,
+                    "chicken", "beef", "pork", "bacon", "ham", "turkey", "lamb");
+        }
+
+        // If diet value is something unexpected, allow all
+        return true;
+    }
+    // Checks if the text above for diet contains any of the given keywords
+    private boolean containsAny(String text, String... keywords) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+
+        String lowerText = text.toLowerCase(Locale.ROOT);
+
+        for (String keyword : keywords) {
+            if (lowerText.contains(keyword.toLowerCase(Locale.ROOT))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+ 
+    
     private int calculateInventoryMatch(RecipeEntity entity) {
         if (inventoryIngredients.isEmpty() || entity.getIngredients() == null) {
             return 0;
@@ -512,7 +589,6 @@ public class MainPage extends VerticalLayout {
      * Parses the nutrition text to extract the protein amount.
      * @param nutritionText the raw nutrition text from the database
      * @return a string with the protein amount or empty if not found
-     */ 
 
     /**
      * Splits the raw ingredients string (a comma-separated list of ingredient descriptions)
@@ -555,13 +631,12 @@ public class MainPage extends VerticalLayout {
         imageArea.addClassName("recipe-image");
         // Written by GitHub Copilot: normalize DB URL before rendering to the browser.
         String imageUrl = MainPageRecipeMethods.normalizeImageUrl(entity.getImgSrc());
+        
         if (imageUrl != null) {
             Image img = new Image(imageUrl, entity.getRecipeName());
             img.addClassName("recipe-photo");
             // Written by GitHub Copilot: some image hosts block requests with referrer headers.
             img.getElement().setAttribute("referrerpolicy", "no-referrer");
-            // Written by GitHub Copilot: lazy loading to reduce image request pressure.
-            img.getElement().setAttribute("loading", "lazy");
             imageArea.add(img);
         } else {
             Span chefIcon = new Span("🍳");
