@@ -35,6 +35,10 @@ public class RecipeEntity {
     @Column(name = "nutrition")
     private String nutrition;
 
+    // Stored as text in DB (e.g. "4.4"), parsed to double when sorting
+    @Column(name = "rating")
+    private String rating;
+
     public Integer getId() { return id; }
     public String getRecipeName() { return recipeName; }
     public String getTotalTime() { return totalTime; }
@@ -45,4 +49,5 @@ public class RecipeEntity {
     public String getImgSrc() { return imgSrc; }
     public String getDirections() {return directions;}
     public String getNutrition() { return nutrition; }
+    public String getRating() { return rating; }
 }

@@ -1,13 +1,12 @@
 package com.example;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Random;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
-import com.example.Inventory;
 import com.example.Services.InventoryServices;
-import com.vaadin.flow.component.AttachEvent;
-import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -355,6 +354,16 @@ public class MainPage extends VerticalLayout {
             }
         } else {
             results = new ArrayList<>(cachedRecipes);
+            // Sort by rating descending, keep top 300, then shuffle with today's date as seed
+            // Same 50 recipes all day — different set each day
+            results.sort((a, b) -> {
+                double ra = parseRating(a.getRating());
+                double rb = parseRating(b.getRating());
+                return Double.compare(rb, ra);
+            });
+            if (results.size() > 300) results = results.subList(0, 300);
+            results = new ArrayList<>(results);
+            Collections.shuffle(results, new Random(java.time.LocalDate.now().toEpochDay()));
         }
 
         // Step 2: Name filter — partial, case-insensitive match on recipe_name
@@ -520,6 +529,11 @@ public class MainPage extends VerticalLayout {
         boolean expiringSoon = expiryDate != null && !expiryDate.isAfter(LocalDate.now().plusDays(7));
 
         return lowStock || expiringSoon;
+    }
+
+    private double parseRating(String rating) {
+        try { return Double.parseDouble(rating); }
+        catch (Exception e) { return 0.0; }
     }
 
     private int calculateMatch(RecipeEntity entity) {

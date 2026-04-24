@@ -5,6 +5,7 @@ import java.util.List;
 import com.example.Inventory;
 import com.example.Services.InventoryServices;
 import com.example.User;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -105,7 +106,12 @@ public class InventoryView extends VerticalLayout {
 			refreshData(username);
 		});
 
-		return new HorizontalLayout(ingredientName, quantity, unit, minimumQuantity, expiryDate, saveButton);
+		Button backButton = new Button("Go back", event ->
+            UI.getCurrent().navigate("main")
+        );
+
+		return new HorizontalLayout(ingredientName, quantity, unit,
+			minimumQuantity, expiryDate, saveButton, backButton);
 	}
 
 	private Grid<Inventory> configureInventoryGrid() {
