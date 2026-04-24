@@ -5,25 +5,25 @@ import java.util.List;
 import com.example.Inventory;
 import com.example.Services.InventoryServices;
 import com.example.User;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
-import com.vaadin.flow.component.UI;
 
 @Route("inventory")
 @PageTitle("Inventory")
@@ -39,9 +39,9 @@ public class InventoryView extends VerticalLayout {
 		this.runOutGrid = new Grid<>(Inventory.class, false);
 
 		User sessionUser = (User) VaadinSession.getCurrent().getAttribute("user");
-		int usernameID = sessionUser != null ? sessionUser.getUsername() : null;
+		Long userId = sessionUser != null ? sessionUser.getId() : null;
 		// This view is user-specific, so block access when no session user exists.
-		if (usernameID == null || usernameID.isBlank()) {
+		if (userId == null) {
 			add(new Span("Please login first."));
 			return;
 		}
@@ -57,15 +57,15 @@ public class InventoryView extends VerticalLayout {
 		
 		headerLayout.add(title, returnBtn);
 		add(headerLayout);
-		add(createForm(usernameID));
+		add(createForm(userId));
 		add(configureInventoryGrid());
 		add(new H2("Ingredients That Run Out First"));
 		add(configureRunOutGrid());
 
-		refreshData(usernameID);
+		refreshData(userId);
 	}
 
-	private HorizontalLayout createForm(int usernameID) {
+	private HorizontalLayout createForm(Long userId) {
 		TextField ingredientName = new TextField("Ingredient");
 		ingredientName.setPlaceholder("Eggs, milk, rice...");
 
@@ -104,7 +104,7 @@ public class InventoryView extends VerticalLayout {
 			double minQty = minQtyValue == null ? 0.0 : minQtyValue;
 
 			inventoryServices.addOrUpdateIngredient(
-					usernameID,
+					userId,
 					ingredientName.getValue(),
 					quantity.getValue(),
 					unit.getValue(),
@@ -116,7 +116,7 @@ public class InventoryView extends VerticalLayout {
 			ingredientName.clear();
 			quantity.clear();
 			expiryDate.clear();
-			refreshData(usernameID);
+			refreshData(userId);
 		});
 
 		return new HorizontalLayout(ingredientName, quantity, unit, minimumQuantity, expiryDate, saveButton);
@@ -134,8 +134,10 @@ public class InventoryView extends VerticalLayout {
 			Button editButton = new Button("Edit amount", click -> openEditAmountDialog(item));
 			Button deleteButton = new Button("Delete", click -> {
 				inventoryServices.deleteInventoryItem(item.getId());
-				int usernameID = getSessionUsernameID();
-				refreshData(usernameID);
+				Long userId = getSessionUserId();
+				if (userId != null) {
+					refreshData(userId);
+				}
 			});
 
 			return new HorizontalLayout(editButton, deleteButton);
@@ -146,8 +148,8 @@ public class InventoryView extends VerticalLayout {
 	}
 
 	private void openEditAmountDialog(Inventory item) {
-		int usernameID = getSessionUsernameID();
-		if (usernameID == null) {
+		Long userId = getSessionUserId();
+		if (userId == null) {
 			Notification.show("Please login first.");
 			return;
 		}
@@ -167,7 +169,7 @@ public class InventoryView extends VerticalLayout {
 				return;
 			}
 
-			boolean updated = inventoryServices.updateQuantity(usernameID, item.getId(), qty);
+			boolean updated = inventoryServices.updateQuantity(userId, item.getId(), qty);
 			if (!updated) {
 				Notification.show("Could not update amount.");
 				return;
@@ -175,7 +177,7 @@ public class InventoryView extends VerticalLayout {
 
 			Notification.show("Amount updated.");
 			dialog.close();
-			refreshData(usernameID);
+			refreshData(userId);
 		});
 
 		dialog.add(new VerticalLayout(newQuantity));
@@ -193,15 +195,15 @@ public class InventoryView extends VerticalLayout {
 		return runOutGrid;
 	}
 
-	private void refreshData(int usernameID) {
+	private void refreshData(Long userId) {
 		// Grid 1 = full inventory, Grid 2 = "runs out first" ordering.
-		List<Inventory> inventory = inventoryServices.getInventoryForUser(usernameID);
+		List<Inventory> inventory = inventoryServices.getInventoryForUser(userId);
 		inventoryGrid.setItems(inventory);
-		runOutGrid.setItems(inventoryServices.getRunOutSoonForUser(usernameID));
+		runOutGrid.setItems(inventoryServices.getRunOutSoonForUser(userId));
 	}
 
-	private String getSessionUsername() {
+	private Long getSessionUserId() {
 		User sessionUser = (User) VaadinSession.getCurrent().getAttribute("user");
-		return sessionUser != null ? sessionUser.getUsername() : null;
+		return sessionUser != null ? sessionUser.getId() : null;
 	}
 }

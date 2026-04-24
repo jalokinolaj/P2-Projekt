@@ -1,13 +1,15 @@
 package com.example.Services;
 
-import com.example.Inventory;
-import com.example.Repositories.InventoryRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import org.springframework.dao.EmptyResultDataAccessException;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
+
+import com.example.Inventory;
+import com.example.Repositories.InventoryRepository;
 
 @Service
 public class InventoryServices {
@@ -15,26 +17,26 @@ public class InventoryServices {
 	@Autowired
 	private InventoryRepository inventoryRepository;
 
-	public List<Inventory> getInventoryForUser(int usernameID) {
+	public List<Inventory> getInventoryForUser(Long userId) {
 		// Main inventory list: sorted by expiry first so older items are visible sooner.
-		return inventoryRepository.findByUsernameIDOrderByExpiryDateAscIngredientNameAsc(usernameID);
+		return inventoryRepository.findByUserIdOrderByExpiryDateAscIngredientNameAsc(userId);
 	}
 
-	public List<Inventory> getRunOutSoonForUser(int usernameID) {
+	public List<Inventory> getRunOutSoonForUser(Long userId) {
 		// "Run out first" list: smallest quantity first.
-		return inventoryRepository.findByUsernameIDOrderByQuantityAsc(usernameID);
+		return inventoryRepository.findByUserIdOrderByQuantityAsc(userId);
 	}
 
-	public Inventory addOrUpdateIngredient(int usernameID, String ingredientName, Double quantity, String unit,
+	public Inventory addOrUpdateIngredient(Long userId, String ingredientName, Double quantity, String unit,
 			Double minimumQuantity, LocalDate expiryDate) {
 		// Upsert: update existing ingredient row for this user, otherwise create a new one.
 		String trimmedIngredientName = ingredientName.trim();
 		String trimmedUnit = unit.trim();
 
-		Inventory item = inventoryRepository.findByUsernameIDAndIngredientNameIgnoreCase(usernameID, trimmedIngredientName)
+		Inventory item = inventoryRepository.findByUserIdAndIngredientNameIgnoreCase(userId, trimmedIngredientName)
 				.orElseGet(Inventory::new);
 
-		item.setUsernameID(usernameID);
+		item.setUserId(userId);
 		item.setIngredientName(trimmedIngredientName);
 		item.setQuantity(quantity);
 		item.setUnit(trimmedUnit);
@@ -48,12 +50,12 @@ public class InventoryServices {
 		return inventoryRepository.save(item);
 	}
 
-	public boolean updateQuantity(int usernameID, Long id, Double quantity) {
+	public boolean updateQuantity(Long userId, Long id, Double quantity) {
 		if (quantity == null || quantity < 0.0) {
 			return false;
 		}
 
-		return inventoryRepository.findByIdAndUsernameID(id, usernameID)
+		return inventoryRepository.findByIdAndUserId(id, userId)
 				.map(item -> {
 					item.setQuantity(quantity);
 					// Keep normalized values in sync until dedicated unit conversion is introduced.

@@ -1,18 +1,20 @@
 package com.example.Repositories;
 
-import com.example.Inventory;
 import java.util.List;
 import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.example.Inventory;
+
 @Repository
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
-	List<Inventory> findByUsernameIDOrderByExpiryDateAscIngredientNameAsc(int usernameID);
+	List<Inventory> findByUserIdOrderByExpiryDateAscIngredientNameAsc(Long userId);
 
-	List<Inventory> findByUsernameIDOrderByQuantityAsc(int usernameID);
+	List<Inventory> findByUserIdOrderByQuantityAsc(Long userId);
 
-	Optional<Inventory> findByUsernameIDAndIngredientNameIgnoreCase(int usernameID, String ingredientName);
+	Optional<Inventory> findByUserIdAndIngredientNameIgnoreCase(Long userId, String ingredientName);
 
-	Optional<Inventory> findByIdAndUsernameID(Long id, int usernameID);
+	Optional<Inventory> findByIdAndUserId(Long id, Long userId);
 }
