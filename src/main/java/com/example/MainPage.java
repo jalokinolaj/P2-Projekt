@@ -1,14 +1,13 @@
 package com.example;
-
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-// Written by GitHub Copilot: needed for safe lowercase URL protocol checks.
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
+import com.example.Inventory;
+import com.example.Services.InventoryServices;
+import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -28,20 +27,6 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
-
-/**
- * MainPage is the primary view of the Recipe Finder application.
- * It is accessible at the "/main" route and displays a searchable,
- * filterable grid of recipes loaded from the PostgreSQL database.
- *
- * Users can:
- *  - Search recipes by name (live filtering as they type)
- *  - Search recipes by ingredients (chips-based multi-ingredient filter)
- *  - Filter by category (Breakfast, Lunch, Dinner, Dessert, Appetizer)
- *  - View their profile and log out
- *
- * If no user is logged in, an error screen is shown instead.
- */
 @Route("main")
 public class MainPage extends VerticalLayout {
 
@@ -51,7 +36,7 @@ public class MainPage extends VerticalLayout {
     // Tracks the current text in the recipe name search field
     private String nameSearchQuery = "";
 
-    // List of ingredients the user has added via the ingredient search bar
+    // Ingredients the user has typed and added for filtering — lives only in memory, never saved
     private final List<String> addedIngredients = new ArrayList<>();
 
     // The row of ingredient chip tags shown below the ingredient search field
@@ -69,13 +54,22 @@ public class MainPage extends VerticalLayout {
     // All recipes loaded from the database at startup, used for in-memory filtering
     private final List<RecipeEntity> cachedRecipes;
 
+    // Current user's inventory rows, used for fridge matching and urgency sorting.
+    private final List<Inventory> inventoryItems;
+
+    // Current user's inventory ingredient names, used for fridge-mode sorting.
+    private final List<String> inventoryIngredients;
+
+    // When true, recipes are sorted by inventory match from the user's fridge.
+    private boolean fridgeModeEnabled = false;
+
     /**
      * Constructor — called by Vaadin/Spring when the user navigates to "/main".
      * Checks if a user is logged in, and either shows the main UI or an error screen.
      *
      * @param recipeRepository injected by Spring, provides access to the recipes table
      */
-    public MainPage(RecipeRepository recipeRepository) {
+    public MainPage(RecipeRepository recipeRepository, InventoryServices inventoryServices) {
         this.recipeRepository = recipeRepository;
 
         // Check if a user is stored in the current session
@@ -83,6 +77,8 @@ public class MainPage extends VerticalLayout {
         if (sessionUser == null) {
             // No logged-in user — show an error card and stop building the page
             this.cachedRecipes = List.of();
+            this.inventoryItems = List.of();
+            this.inventoryIngredients = List.of();
             setSizeFull();
             setJustifyContentMode(JustifyContentMode.CENTER);
             setAlignItems(Alignment.CENTER);
@@ -109,6 +105,13 @@ public class MainPage extends VerticalLayout {
 
         // Load all recipes from the database once and store them in memory
         this.cachedRecipes = recipeRepository.findAll();
+        this.inventoryItems = inventoryServices.getInventoryForUser(sessionUser.getUsername());
+        this.inventoryIngredients = inventoryItems.stream()
+            .map(Inventory::getIngredientName)
+            .filter(name -> name != null && !name.isBlank())
+            .map(name -> name.trim().toLowerCase(Locale.ROOT))
+            .distinct()
+            .collect(Collectors.toList());
 
         setSizeFull();
         setPadding(false);
@@ -225,7 +228,7 @@ public class MainPage extends VerticalLayout {
         addBtn.addClickListener(e -> {
             String val = ingredientField.getValue().trim().toLowerCase();
             if (!val.isEmpty() && !addedIngredients.contains(val)) {
-                // Add the ingredient to the filter list, update the chip row and grid
+                // Add to in-memory filter list only — nothing is saved to the database
                 addedIngredients.add(val);
                 ingredientField.clear();
                 refreshChips();
@@ -250,10 +253,6 @@ public class MainPage extends VerticalLayout {
         return searchCard;
     }
 
-    /**
-     * Redraws the ingredient chips row from scratch based on the current addedIngredients list.
-     * Each chip shows the ingredient name and an "×" button to remove it from the filter.
-     */
     private void refreshChips() {
         ingredientChips.removeAll();
         ingredientChips.setVisible(!addedIngredients.isEmpty());
@@ -266,7 +265,7 @@ public class MainPage extends VerticalLayout {
             remove.addClassName("chip-remove");
             remove.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
 
-            // Clicking "×" removes this ingredient from the filter and refreshes the grid
+            // Clicking × removes this ingredient from the in-memory filter
             remove.addClickListener(e -> {
                 addedIngredients.remove(ing);
                 refreshChips();
@@ -316,30 +315,35 @@ public class MainPage extends VerticalLayout {
             filterRow.add(btn);
         }
 
+        // Fridge mode sorts recipes by how well they match the user's current inventory
+        Button fridgeModeBtn = new Button("Fridge mode: Off", VaadinIcon.ARCHIVE.create());
+        fridgeModeBtn.addClassName("filter-btn");
+        fridgeModeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        fridgeModeBtn.addClickListener(e -> {
+            fridgeModeEnabled = !fridgeModeEnabled;
+            if (fridgeModeEnabled) {
+                fridgeModeBtn.setText("Fridge mode: On");
+                fridgeModeBtn.removeThemeVariants(ButtonVariant.LUMO_TERTIARY);
+                fridgeModeBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            } else {
+                fridgeModeBtn.setText("Fridge mode: Off");
+                fridgeModeBtn.removeThemeVariants(ButtonVariant.LUMO_PRIMARY);
+                fridgeModeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+            }
+            refreshRecipeGrid();
+        });
+        filterRow.add(fridgeModeBtn);
+
         return filterRow;
     }
 
-    /**
-     * Core method that rebuilds the recipe grid based on the current filter state.
-     *
-     * Filter pipeline (applied in order):
-     *  1. Ingredient filter  — if ingredients are added, query the DB for the first ingredient,
-     *                          then narrow down in memory for any additional ingredients.
-     *  2. Name filter        — if nameSearchQuery is non-empty, keep only recipes whose
-     *                          name contains the search text (case-insensitive).
-     *  3. Category filter    — keep only recipes that map to the selected category.
-     *  4. Sort               — if ingredients are active, sort by match % descending.
-     *  5. Limit              — cap results at 50 cards to avoid overloading the UI.
-     */
     private void refreshRecipeGrid() {
         if (recipeGrid == null) return;
         recipeGrid.removeAll();
 
         List<RecipeEntity> results;
 
-        // Step 1: Ingredient filter
-        // Use the DB to fetch recipes containing the first ingredient (faster than scanning all),
-        // then filter in memory for each additional ingredient.
+        // Step 1: Ingredient filter — uses the in-memory addedIngredients list
         if (!addedIngredients.isEmpty()) {
             results = recipeRepository.findByIngredient(addedIngredients.get(0));
             for (int i = 1; i < addedIngredients.size(); i++) {
@@ -350,7 +354,6 @@ public class MainPage extends VerticalLayout {
                     .collect(Collectors.toList());
             }
         } else {
-            // No ingredient filter — start with the full cached recipe list
             results = new ArrayList<>(cachedRecipes);
         }
 
@@ -362,15 +365,31 @@ public class MainPage extends VerticalLayout {
                 .collect(Collectors.toList());
         }
 
+       // Step 2.5: Diet filter based on logged-in user's preference
+        User sessionUser = (User) VaadinSession.getCurrent().getAttribute("user");
+
+        if (sessionUser != null && sessionUser.getDiet() != null && !sessionUser.getDiet().isBlank()) {
+            String userDiet = sessionUser.getDiet().trim();
+
+            results = results.stream()
+                .filter(recipe -> matchesDiet(recipe, userDiet))
+                .collect(Collectors.toList());
+        }
+        
+        
         // Step 3: Category filter — map the DB's cuisine_path to our category labels
         if (!currentCategory.equals("All")) {
             results = results.stream()
-                .filter(r -> mapCategory(r.getCuisinePath()).equals(currentCategory))
+                .filter(r -> MainPageRecipeMethods.mapCategory(r.getCuisinePath()).equals(currentCategory))
                 .collect(Collectors.toList());
         }
 
-        // Step 4: Sort by ingredient match % (highest first) when ingredients are active
-        if (!addedIngredients.isEmpty()) {
+        // Step 4: Sort — fridge mode sorts by inventory match score, otherwise by ingredient match
+        if (fridgeModeEnabled) {
+            results = results.stream()
+                .sorted((a, b) -> calculateFridgeScore(b) - calculateFridgeScore(a))
+                .collect(Collectors.toList());
+        } else if (!addedIngredients.isEmpty()) {
             results = results.stream()
                 .sorted((a, b) -> calculateMatch(b) - calculateMatch(a))
                 .collect(Collectors.toList());
@@ -389,20 +408,120 @@ public class MainPage extends VerticalLayout {
 
         // Render a card for each recipe
         for (RecipeEntity entity : results) {
-            int matchPercent = calculateMatch(entity);
+            int matchPercent = fridgeModeEnabled ? calculateInventoryMatch(entity) : calculateMatch(entity);
             recipeGrid.add(createRecipeCard(entity, matchPercent));
         }
+    
+    }
+    
+    // Checks if a recipe matches the user's diet preference based on its ingredients
+    // Checks if a recipe matches the user's selected diet
+    private boolean matchesDiet(RecipeEntity recipe, String diet) {
+        // If no diet is chosen, allow all recipes
+        if (diet == null || diet.isBlank()) {
+            return true;
+        }
+
+        // Convert diet to lowercase so comparison is easier
+        String userDiet = diet.toLowerCase(Locale.ROOT).trim();
+
+        // "none" and "omnivore" mean no filtering
+        if (userDiet.equals("none") || userDiet.equals("omnivore")) {
+            return true;
+        }
+
+        // Get recipe ingredients as lowercase text
+        String ingredients = recipe.getIngredients() == null
+                ? ""
+                : recipe.getIngredients().toLowerCase(Locale.ROOT);
+
+        // VEGAN: no meat, fish, dairy, eggs, honey
+        if (userDiet.equals("vegan")) {
+            return !containsAny(ingredients,
+                    "chicken", "beef", "pork", "bacon", "ham", "turkey",
+                    "fish", "salmon", "tuna", "shrimp", "prawn",
+                    "egg", "eggs",
+                    "milk", "cheese", "butter", "cream", "yogurt", "honey", "lamb", "lobster");
+        }
+
+        // VEGETARIAN: no meat or fish
+        if (userDiet.equals("vegetarian")) {
+            return !containsAny(ingredients,
+                    "chicken", "beef", "pork", "bacon", "ham", "turkey",
+                    "fish", "salmon", "tuna", "shrimp", "prawn", "lamb", "lobster");
+        }
+
+        // PESCATARIAN: no meat, but fish is allowed
+        if (userDiet.equals("pescatarian")) {
+            return !containsAny(ingredients,
+                    "chicken", "beef", "pork", "bacon", "ham", "turkey", "lamb");
+        }
+
+        // If diet value is something unexpected, allow all
+        return true;
+    }
+    // Checks if the text above for diet contains any of the given keywords
+    private boolean containsAny(String text, String... keywords) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+
+        String lowerText = text.toLowerCase(Locale.ROOT);
+
+        for (String keyword : keywords) {
+            if (lowerText.contains(keyword.toLowerCase(Locale.ROOT))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    /**
-     * Calculates how many of the user's added ingredients appear in the recipe's ingredient text,
-     * expressed as a percentage of the total number of added ingredients.
-     *
-     * Example: user added ["chicken", "garlic"], recipe contains "chicken" but not "garlic" → 50%
-     *
-     * @param entity the recipe to check
-     * @return match percentage (0–100), or 0 if no ingredients have been added
-     */
+    
+    private int calculateInventoryMatch(RecipeEntity entity) {
+        if (inventoryIngredients.isEmpty() || entity.getIngredients() == null) {
+            return 0;
+        }
+        String ingText = entity.getIngredients().toLowerCase(Locale.ROOT);
+        long matches = inventoryIngredients.stream()
+            .filter(ingText::contains)
+            .count();
+        return (int) Math.round((double) matches / inventoryIngredients.size() * 100);
+    }
+
+    // Simple fridge score:
+    // 1) base = normal inventory match percent
+    // 2) +10 points for each matching ingredient that is about to run out
+    private int calculateFridgeScore(RecipeEntity entity) {
+        if (entity.getIngredients() == null) {
+            return 0;
+        }
+
+        String recipeIngredients = entity.getIngredients().toLowerCase(Locale.ROOT);
+        int matchPercent = calculateInventoryMatch(entity);
+
+        long runOutSoonHits = inventoryItems.stream()
+            .filter(item -> item.getIngredientName() != null)
+            .filter(item -> recipeIngredients.contains(item.getIngredientName().toLowerCase(Locale.ROOT)))
+            .filter(this::isAboutToRunOut)
+            .count();
+
+        return matchPercent + (int) runOutSoonHits * 10;
+    }
+
+    private boolean isAboutToRunOut(Inventory item) {
+        Double quantityValue = item.getQuantity();
+        Double minimumValue = item.getMinimumQuantity();
+        double quantity = quantityValue == null ? 0.0 : quantityValue;
+        double minimum = minimumValue == null ? 0.0 : minimumValue;
+
+        boolean lowStock = quantity <= minimum;
+        LocalDate expiryDate = item.getExpiryDate();
+        boolean expiringSoon = expiryDate != null && !expiryDate.isAfter(LocalDate.now().plusDays(7));
+
+        return lowStock || expiringSoon;
+    }
+
     private int calculateMatch(RecipeEntity entity) {
         if (addedIngredients.isEmpty() || entity.getIngredients() == null) return 0;
         String ingText = entity.getIngredients().toLowerCase();
@@ -412,131 +531,6 @@ public class MainPage extends VerticalLayout {
         return (int) Math.round((double) matches / addedIngredients.size() * 100);
     }
 
-    /**
-     * Maps the database's cuisine_path (e.g. "/Desserts/Cakes/Chocolate Cake Recipes/")
-     * to one of the five app categories: Dessert, Breakfast, Appetizer, Lunch, or Dinner.
-     * Dinner is the default fallback for anything that doesn't match the other keywords.
-     *
-     * @param cuisinePath the raw cuisine_path string from the database
-     * @return one of: "Dessert", "Breakfast", "Appetizer", "Lunch", "Dinner"
-     */
-    private String mapCategory(String cuisinePath) {
-        if (cuisinePath == null) return "Dinner";
-        String p = cuisinePath.toLowerCase();
-        if (p.contains("dessert") || p.contains("cake") || p.contains("cookie")
-                || p.contains("pie") || p.contains("pudding") || p.contains("cobbler")
-                || p.contains("candy") || p.contains("brownie") || p.contains("fudge")
-                || p.contains("shortcake") || p.contains("ice cream"))
-            return "Dessert";
-        if (p.contains("breakfast") || p.contains("brunch") || p.contains("bread"))
-            return "Breakfast";
-        if (p.contains("appetizer") || p.contains("snack") || p.contains("dip")
-                || p.contains("spread"))
-            return "Appetizer";
-        if (p.contains("salad") || p.contains("lunch"))
-            return "Lunch";
-        return "Dinner";
-    }
-
-    /**
-     * Parses a human-readable time string (e.g. "1 hrs 25 mins", "45 mins") into total minutes.
-     * Prefers total_time over cook_time when both are available.
-     *
-     * @param entity the recipe entity containing the time fields
-     * @return total time in minutes, or 0 if the time string is missing or unparseable
-     */
-    private int parseMinutes(RecipeEntity entity) {
-        String timeStr = entity.getTotalTime() != null ? entity.getTotalTime() : entity.getCookTime();
-        if (timeStr == null || timeStr.isEmpty()) return 0;
-        int total = 0;
-        Matcher hours = Pattern.compile("(\\d+)\\s*hr").matcher(timeStr);
-        if (hours.find()) total += Integer.parseInt(hours.group(1)) * 60;
-        Matcher mins = Pattern.compile("(\\d+)\\s*min").matcher(timeStr);
-        if (mins.find()) total += Integer.parseInt(mins.group(1));
-        return total;
-    }
-
-    /**
-     * Parses the nutrition text to extract the protein amount.
-     * @param nutritionText the raw nutrition text from the database
-     * @return a string with the protein amount or empty if not found
-     */    
-    private String parseNutrition(String nutritionText){
-        if (nutritionText == null) return "";
-        String target = "Protein";
-        Pattern pattern = Pattern.compile(target + ":?\\s*(\\d+\\.?\\d*)\\s*g", Pattern.CASE_INSENSITIVE);
-        Matcher match = pattern.matcher(nutritionText);
-        if (match.find()) {
-            return "🍗 " + match.group(1) + "g protein";
-        } else {
-            return "";
-        }
-    } 
-
-
-
-    /**
-     * Splits the raw ingredients string (a comma-separated list of ingredient descriptions)
-     * into an array of individual ingredient strings, capped at 8 items for display purposes.
-     *
-     * Example input:  "2 cups flour, 1 egg, 1 tsp salt, ..."
-     * Example output: ["2 cups flour", "1 egg", "1 tsp salt", ...]
-     *
-     * @param ingredientsText the raw ingredients text from the database
-     * @return array of trimmed ingredient strings (max 8 entries)
-     */
-    private String[] parseIngredients(String ingredientsText) {
-        if (ingredientsText == null) return new String[0];
-        return Arrays.stream(ingredientsText.split(","))
-            .map(String::trim)
-            .filter(s -> !s.isEmpty())
-            .limit(8)
-            .toArray(String[]::new);
-    }
-
-    /**
-     * Normalizes image URLs from the database so they work reliably in the browser.
-     * Handles common stored variants like quoted strings and escaped slashes.
-     */
-    // Written by GitHub Copilot: URL normalization helper for robust external image loading.
-    private String normalizeImageUrl(String rawUrl) {
-        if (rawUrl == null) return null;
-
-        String url = rawUrl.trim();
-        if (url.isEmpty()) return null;
-
-        if ((url.startsWith("\"") && url.endsWith("\"")) || (url.startsWith("'") && url.endsWith("'"))) {
-            url = url.substring(1, url.length() - 1).trim();
-        }
-
-        url = url.replace("\\/", "/");
-        url = url.replace(" ", "%20");
-
-        if (url.startsWith("//")) {
-            url = "https:" + url;
-        }
-
-        String lower = url.toLowerCase(Locale.ROOT);
-        if (!(lower.startsWith("http://") || lower.startsWith("https://") || lower.startsWith("data:image/"))) {
-            return null;
-        }
-
-        return url;
-    }
-
-    /**
-     * Builds a single recipe card Div to be placed in the recipe grid.
-     * Each card contains:
-     *  - A photo from the database (or a fallback emoji if no image is available)
-     *  - The recipe name and a match % badge
-     *  - A category chip
-     *  - Cook time and servings
-     *  - The first 8 ingredients
-     *
-     * @param entity       the recipe data from the database
-     * @param matchPercent how well this recipe matches the user's added ingredients (0–100)
-     * @return a fully constructed recipe card Div
-     */
     private Div createRecipeCard(RecipeEntity entity, int matchPercent) {
         Div card = new Div();
         card.addClassName("recipe-card");
@@ -545,14 +539,13 @@ public class MainPage extends VerticalLayout {
         Div imageArea = new Div();
         imageArea.addClassName("recipe-image");
         // Written by GitHub Copilot: normalize DB URL before rendering to the browser.
-        String imageUrl = normalizeImageUrl(entity.getImgSrc());
+        String imageUrl = MainPageRecipeMethods.normalizeImageUrl(entity.getImgSrc());
+        
         if (imageUrl != null) {
             Image img = new Image(imageUrl, entity.getRecipeName());
             img.addClassName("recipe-photo");
             // Written by GitHub Copilot: some image hosts block requests with referrer headers.
             img.getElement().setAttribute("referrerpolicy", "no-referrer");
-            // Written by GitHub Copilot: lazy loading to reduce image request pressure.
-            img.getElement().setAttribute("loading", "lazy");
             imageArea.add(img);
         } else {
             Span chefIcon = new Span("🍳");
@@ -576,13 +569,13 @@ public class MainPage extends VerticalLayout {
         titleRow.add(titleEl, matchBadge);
 
         // Category chip derived from the cuisine_path in the database
-        Span catChip = new Span(mapCategory(entity.getCuisinePath()));
+        Span catChip = new Span(MainPageRecipeMethods.mapCategory(entity.getCuisinePath()));
         catChip.addClassName("category-chip");
 
         // Meta row: cook time and serving count
         Div metaRow = new Div();
         metaRow.addClassName("meta-row");
-        int minutes = parseMinutes(entity);
+        int minutes = MainPageRecipeMethods.parseMinutes(entity);
         metaRow.add(new Span(minutes > 0 ? "⏱ " + minutes + " min" : "⏱ N/A"));
         metaRow.add(new Span("👥 " + (entity.getServings() != null ? entity.getServings() : "?") + " servings"));
 
@@ -590,11 +583,11 @@ public class MainPage extends VerticalLayout {
         Paragraph ingLabel = new Paragraph("Ingredients:");
         ingLabel.addClassName("ingredients-label");
 
-        String[] ingredients = parseIngredients(entity.getIngredients());
+        String[] ingredients = MainPageRecipeMethods.parseIngredients(entity.getIngredients());
         Span ingList = new Span(String.join(", ", ingredients));
         ingList.addClassName("ingredients-list");
 
-        body.add(titleRow, catChip, metaRow, ingLabel, ingList, new Span(parseNutrition(entity.getNutrition())));
+        body.add(titleRow, catChip, metaRow, ingLabel, ingList, new Span(MainPageRecipeMethods.parseNutrition(entity.getNutrition())));
         card.add(imageArea, body);
         
         card.getStyle().set("cursor", "pointer");
@@ -622,7 +615,7 @@ public class MainPage extends VerticalLayout {
         content.setPadding(false);
         content.setAlignItems(Alignment.CENTER);
 
-        // Read the user object from the session to display their username
+        // Read the user object from the session to display their profile info
         User user = (User) VaadinSession.getCurrent().getAttribute("user");
         if (user != null) {
             // Avatar circle showing the first letter of the username
@@ -632,14 +625,32 @@ public class MainPage extends VerticalLayout {
 
             H3 username = new H3("@" + user.getUsername());
             content.add(avatar, username);
+
+            // Show the diet preference saved during registration
+            Span diet = new Span("Diet: " + (user.getDiet() != null ? user.getDiet() : "None"));
+            diet.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            content.add(diet);
+
+            // Show the allergies saved during registration (stored as comma-separated string)
+            String allergiesRaw = user.getAllergies();
+            String allergiesDisplay = (allergiesRaw == null || allergiesRaw.isBlank()) ? "None" : allergiesRaw;
+            Span allergies = new Span("Allergies: " + allergiesDisplay);
+            allergies.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            content.add(allergies);
         } else {
             content.add(new Span("Not logged in."));
         }
 
-        Span ingCount = new Span("Ingredients added: " + addedIngredients.size());
-        ingCount.getStyle().set("color", "var(--lumo-secondary-text-color)");
-        content.add(ingCount);
+        Button inventoryBtn = new Button("Go to Inventory", e -> {
+            dialog.close();
+            UI.getCurrent().navigate("inventory");
+        });
 
+        Button profileViewBtn = new Button("Go to profile", e -> {
+            dialog.close();
+            UI.getCurrent().navigate("profile");
+        });
+        
         // Logout: close the Vaadin session and navigate back to the login page
         Button logoutBtn = new Button("Logout", VaadinIcon.SIGN_OUT.create(), e -> {
             VaadinSession.getCurrent().close();
@@ -653,7 +664,8 @@ public class MainPage extends VerticalLayout {
         closeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         closeBtn.setWidthFull();
 
-        content.add(logoutBtn, closeBtn);
+        inventoryBtn.setWidthFull();
+        content.add(profileViewBtn, inventoryBtn, logoutBtn, closeBtn);
         dialog.add(content);
         dialog.open();
     }

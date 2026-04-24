@@ -19,18 +19,20 @@ public class Recipes {
     @Column(name = "recipe_name", nullable = false)
     private String recipeName;
 
-    @Column(name = "img_src", nullable = false)
+    // nullable = false removed — img_src has nulls in the DB
+    @Column(name = "img_src")
     private String imgSrc;
 
-    @Column(nullable = false)
-    private Double rating;
+    // Stored as text in DB (e.g. "4.4"), parsed to Double when needed
+    @Column
+    private String rating;
 
     // --- Constructors ---
 
     public Recipes() {
     }
 
-    public Recipes(String recipeName, String imgSrc, Double rating) {
+    public Recipes(String recipeName, String imgSrc, String rating) {
         this.recipeName = recipeName;
         this.imgSrc = imgSrc;
         this.rating = rating;
@@ -59,10 +61,10 @@ public class Recipes {
         this.imgSrc = imgSrc;
     }
 
-    public Double getRating() {
+    public String getRating() {
         return rating;
     }
-    public void setRating(Double rating) {
+    public void setRating(String rating) {
         this.rating = rating;
     }
 }

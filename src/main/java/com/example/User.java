@@ -1,52 +1,75 @@
 package com.example;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.persistence.Column;
 
 @Entity
 @Table(name = "app_user")
-
 public class User {
-	@Id
-	    @GeneratedValue(strategy = GenerationType.IDENTITY)
-	    private Long id;
 
-	    @Column(unique = true, nullable = false)
-	    private String username;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	    @Column(nullable = false)
-	    private String password;
+    @Column(unique = true, nullable = false)
+    private String username;
 
-	    public User() {
-	    }
+    @Column(nullable = false)
+    private String password;
 
-	    public User(String username, String password) {
-	        this.username = username;
-	        this.password = password;
-	    }
+    @Column(nullable = false)
+    private String diet;
 
-	    public Long getId() {
-	        return id;
-	    }
+    @Column(nullable = true)
+    private String allergies;
 
-	    public String getUsername() {
-	        return username;
-	    }
+    public User() {
+    }
 
-	    public void setUsername(String username) {
-	        this.username = username;
-	    }
+    public User(String username, String password, String diet, String allergies) {
+        this.username = username;
+        this.password = password;
+        this.diet = diet;
+        this.allergies = allergies;
+    }
 
-	    public String getPassword() {
-	        return password;
-	    }
+    public Long getId() {
+        return id;
+    }
 
-	    public void setPassword(String password) {
-	        this.password = password;
-	    }
-	
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getDiet() {
+        return diet;
+    }
+
+    public void setDiet(String diet) {
+        this.diet = diet;
+    }
+
+    public String getAllergies() {
+        return allergies;
+    }
+
+    public void setAllergies(String allergies) {
+        this.allergies = allergies;
+    }
 }
