@@ -8,11 +8,11 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
-	List<Inventory> findByUsernameOrderByExpiryDateAscIngredientNameAsc(String username);
+	List<Inventory> findByUsernameIDOrderByExpiryDateAscIngredientNameAsc(int usernameID);
 
-	List<Inventory> findByUsernameOrderByQuantityAsc(String username);
+	List<Inventory> findByUsernameIDOrderByQuantityAsc(int usernameID);
 
-	Optional<Inventory> findByUsernameAndIngredientNameIgnoreCase(String username, String ingredientName);
+	Optional<Inventory> findByUsernameIDAndIngredientNameIgnoreCase(int usernameID, String ingredientName);
 
-	Optional<Inventory> findByIdAndUsername(Long id, String username);
+	Optional<Inventory> findByIdAndUsernameID(Long id, int usernameID);
 }

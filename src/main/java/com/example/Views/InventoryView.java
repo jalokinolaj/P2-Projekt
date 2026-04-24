@@ -14,12 +14,16 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.component.UI;
 
 @Route("inventory")
 @PageTitle("Inventory")
@@ -35,23 +39,33 @@ public class InventoryView extends VerticalLayout {
 		this.runOutGrid = new Grid<>(Inventory.class, false);
 
 		User sessionUser = (User) VaadinSession.getCurrent().getAttribute("user");
-		String username = sessionUser != null ? sessionUser.getUsername() : null;
+		int usernameID = sessionUser != null ? sessionUser.getUsername() : null;
 		// This view is user-specific, so block access when no session user exists.
-		if (username == null || username.isBlank()) {
+		if (usernameID == null || usernameID.isBlank()) {
 			add(new Span("Please login first."));
 			return;
 		}
 
-		add(new H2("My Inventory"));
-		add(createForm(username));
+		HorizontalLayout headerLayout = new HorizontalLayout();
+		headerLayout.setAlignItems(Alignment.CENTER);
+		headerLayout.setSpacing(true);
+		
+		H2 title = new H2("My Inventory");
+		Button returnBtn = new Button("Return to Recipes", VaadinIcon.ARROW_BACKWARD.create(), 
+			e -> UI.getCurrent().navigate("main"));
+		returnBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+		
+		headerLayout.add(title, returnBtn);
+		add(headerLayout);
+		add(createForm(usernameID));
 		add(configureInventoryGrid());
 		add(new H2("Ingredients That Run Out First"));
 		add(configureRunOutGrid());
 
-		refreshData(username);
+		refreshData(usernameID);
 	}
 
-	private HorizontalLayout createForm(String username) {
+	private HorizontalLayout createForm(int usernameID) {
 		TextField ingredientName = new TextField("Ingredient");
 		ingredientName.setPlaceholder("Eggs, milk, rice...");
 
@@ -90,7 +104,7 @@ public class InventoryView extends VerticalLayout {
 			double minQty = minQtyValue == null ? 0.0 : minQtyValue;
 
 			inventoryServices.addOrUpdateIngredient(
-					username,
+					usernameID,
 					ingredientName.getValue(),
 					quantity.getValue(),
 					unit.getValue(),
@@ -102,7 +116,7 @@ public class InventoryView extends VerticalLayout {
 			ingredientName.clear();
 			quantity.clear();
 			expiryDate.clear();
-			refreshData(username);
+			refreshData(usernameID);
 		});
 
 		return new HorizontalLayout(ingredientName, quantity, unit, minimumQuantity, expiryDate, saveButton);
@@ -120,8 +134,8 @@ public class InventoryView extends VerticalLayout {
 			Button editButton = new Button("Edit amount", click -> openEditAmountDialog(item));
 			Button deleteButton = new Button("Delete", click -> {
 				inventoryServices.deleteInventoryItem(item.getId());
-				String username = getSessionUsername();
-				refreshData(username);
+				int usernameID = getSessionUsernameID();
+				refreshData(usernameID);
 			});
 
 			return new HorizontalLayout(editButton, deleteButton);
@@ -132,8 +146,8 @@ public class InventoryView extends VerticalLayout {
 	}
 
 	private void openEditAmountDialog(Inventory item) {
-		String username = getSessionUsername();
-		if (username == null || username.isBlank()) {
+		int usernameID = getSessionUsernameID();
+		if (usernameID == null) {
 			Notification.show("Please login first.");
 			return;
 		}
@@ -153,7 +167,7 @@ public class InventoryView extends VerticalLayout {
 				return;
 			}
 
-			boolean updated = inventoryServices.updateQuantity(username, item.getId(), qty);
+			boolean updated = inventoryServices.updateQuantity(usernameID, item.getId(), qty);
 			if (!updated) {
 				Notification.show("Could not update amount.");
 				return;
@@ -161,7 +175,7 @@ public class InventoryView extends VerticalLayout {
 
 			Notification.show("Amount updated.");
 			dialog.close();
-			refreshData(username);
+			refreshData(usernameID);
 		});
 
 		dialog.add(new VerticalLayout(newQuantity));
@@ -179,11 +193,11 @@ public class InventoryView extends VerticalLayout {
 		return runOutGrid;
 	}
 
-	private void refreshData(String username) {
+	private void refreshData(int usernameID) {
 		// Grid 1 = full inventory, Grid 2 = "runs out first" ordering.
-		List<Inventory> inventory = inventoryServices.getInventoryForUser(username);
+		List<Inventory> inventory = inventoryServices.getInventoryForUser(usernameID);
 		inventoryGrid.setItems(inventory);
-		runOutGrid.setItems(inventoryServices.getRunOutSoonForUser(username));
+		runOutGrid.setItems(inventoryServices.getRunOutSoonForUser(usernameID));
 	}
 
 	private String getSessionUsername() {

@@ -5,6 +5,7 @@ import java.util.Optional;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
@@ -14,13 +15,16 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import java.util.Set;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
 @Route("profile")
 public class ProfileView extends VerticalLayout {
 
     private final UserRepository userRepository;
     private final Binder<User> binder = new Binder<>(User.class);
-
+        
     private User currentUser;
     private CheckboxGroup<String> allergies;
 
@@ -61,7 +65,6 @@ public class ProfileView extends VerticalLayout {
         currentUser = optionalUser.get();
 
         H2 title = new H2("My Profile");
-
         TextField username = new TextField("Name");
 
         Select<String> diet = new Select<>();
