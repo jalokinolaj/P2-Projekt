@@ -2,6 +2,7 @@ package com.example;
 
 import java.util.Optional;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
@@ -87,7 +88,11 @@ public class ProfileView extends VerticalLayout {
             allergies.setValue(Set.of(currentUser.getAllergies().split(",")));
         }
 
-        add(title, formLayout, saveButton);
+        Button backButton = new Button("Go back", event ->
+            UI.getCurrent().navigate("main")
+        );
+
+        add(title, formLayout, saveButton, backButton);
     }
 
     private void saveProfile() {

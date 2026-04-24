@@ -1,5 +1,4 @@
 package com.example;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,27 +21,12 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
-
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
-
-/**
- * MainPage is the primary view of the Recipe Finder application.
- * It is accessible at the "/main" route and displays a searchable,
- * filterable grid of recipes loaded from the PostgreSQL database.
- *
- * Users can:
- *  - Search recipes by name (live filtering as they type)
- *  - Search recipes by ingredients (chips-based multi-ingredient filter)
- *  - Filter by category (Breakfast, Lunch, Dinner, Dessert, Appetizer)
- *  - View their profile and log out
- *
- * If no user is logged in, an error screen is shown instead.
- */
 @Route("main")
 public class MainPage extends VerticalLayout {
 
@@ -352,18 +336,6 @@ public class MainPage extends VerticalLayout {
         return filterRow;
     }
 
-    /**
-     * Core method that rebuilds the recipe grid based on the current filter state.
-     *
-     * Filter pipeline (applied in order):
-     *  1. Ingredient filter  — if ingredients are added, query the DB for the first ingredient,
-     *                          then narrow down in memory for any additional ingredients.
-     *  2. Name filter        — if nameSearchQuery is non-empty, keep only recipes whose
-     *                          name contains the search text (case-insensitive).
-     *  3. Category filter    — keep only recipes that map to the selected category.
-     *  4. Sort               — if ingredients are active, sort by match % descending.
-     *  5. Limit              — cap results at 50 cards to avoid overloading the UI.
-     */
     private void refreshRecipeGrid() {
         if (recipeGrid == null) return;
         recipeGrid.removeAll();
@@ -443,7 +415,7 @@ public class MainPage extends VerticalLayout {
     }
     
     // Checks if a recipe matches the user's diet preference based on its ingredients
- // Checks if a recipe matches the user's selected diet
+    // Checks if a recipe matches the user's selected diet
     private boolean matchesDiet(RecipeEntity recipe, String diet) {
         // If no diet is chosen, allow all recipes
         if (diet == null || diet.isBlank()) {
@@ -504,7 +476,7 @@ public class MainPage extends VerticalLayout {
 
         return false;
     }
- 
+
     
     private int calculateInventoryMatch(RecipeEntity entity) {
         if (inventoryIngredients.isEmpty() || entity.getIngredients() == null) {
@@ -550,15 +522,6 @@ public class MainPage extends VerticalLayout {
         return lowStock || expiringSoon;
     }
 
-    /**
-     * Calculates how many of the user's added ingredients appear in the recipe's ingredient text,
-     * expressed as a percentage of the total number of added ingredients.
-     *
-     * Example: user added ["chicken", "garlic"], recipe contains "chicken" but not "garlic" → 50%
-     *
-     * @param entity the recipe to check
-     * @return match percentage (0–100), or 0 if no ingredients have been added
-     */
     private int calculateMatch(RecipeEntity entity) {
         if (addedIngredients.isEmpty() || entity.getIngredients() == null) return 0;
         String ingText = entity.getIngredients().toLowerCase();
@@ -568,60 +531,6 @@ public class MainPage extends VerticalLayout {
         return (int) Math.round((double) matches / addedIngredients.size() * 100);
     }
 
-    /**
-     * Maps the database's cuisine_path (e.g. "/Desserts/Cakes/Chocolate Cake Recipes/")
-     * to one of the five app categories: Dessert, Breakfast, Appetizer, Lunch, or Dinner.
-     * Dinner is the default fallback for anything that doesn't match the other keywords.
-     *
-     * @param cuisinePath the raw cuisine_path string from the database
-     * @return one of: "Dessert", "Breakfast", "Appetizer", "Lunch", "Dinner"
-     */
-
-    /**
-     * Parses a human-readable time string (e.g. "1 hrs 25 mins", "45 mins") into total minutes.
-     * Prefers total_time over cook_time when both are available.
-     *
-     * @param entity the recipe entity containing the time fields
-     * @return total time in minutes, or 0 if the time string is missing or unparseable
-     */
-
-    /**
-     * Parses the nutrition text to extract the protein amount.
-     * @param nutritionText the raw nutrition text from the database
-     * @return a string with the protein amount or empty if not found
-
-    /**
-     * Splits the raw ingredients string (a comma-separated list of ingredient descriptions)
-     * into an array of individual ingredient strings, capped at 8 items for display purposes.
-     *
-     * Example input:  "2 cups flour, 1 egg, 1 tsp salt, ..."
-     * Example output: ["2 cups flour", "1 egg", "1 tsp salt", ...]
-     *
-     * @param ingredientsText the raw ingredients text from the database
-     * @return array of trimmed ingredient strings (max 8 entries)
-     */
-
-
-    /**
-     * Normalizes image URLs from the database so they work reliably in the browser.
-     * Handles common stored variants like quoted strings and escaped slashes.
-     */
-    // Written by GitHub Copilot: URL normalization helper for robust external image loading.
-
-
-    /**
-     * Builds a single recipe card Div to be placed in the recipe grid.
-     * Each card contains:
-     *  - A photo from the database (or a fallback emoji if no image is available)
-     *  - The recipe name and a match % badge
-     *  - A category chip
-     *  - Cook time and servings
-     *  - The first 8 ingredients
-     *
-     * @param entity       the recipe data from the database
-     * @param matchPercent how well this recipe matches the user's added ingredients (0–100)
-     * @return a fully constructed recipe card Div
-     */
     private Div createRecipeCard(RecipeEntity entity, int matchPercent) {
         Div card = new Div();
         card.addClassName("recipe-card");
