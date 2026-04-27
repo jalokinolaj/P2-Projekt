@@ -384,8 +384,15 @@ public class MainPage extends VerticalLayout {
                 .filter(recipe -> matchesDiet(recipe, userDiet))
                 .collect(Collectors.toList());
         }
-        
-        
+
+        // Step 2.6: Allergy filter — exclude recipes containing any of the user's allergens
+        if (sessionUser != null && sessionUser.getAllergies() != null && !sessionUser.getAllergies().isBlank()) {
+            List<String> userAllergens = java.util.Arrays.asList(sessionUser.getAllergies().split(","));
+            results = results.stream()
+                .filter(recipe -> matchesAllergens(recipe, userAllergens))
+                .collect(Collectors.toList());
+        }
+
         // Step 3: Category filter — map the DB's cuisine_path to our category labels
         if (!currentCategory.equals("All")) {
             results = results.stream()
@@ -425,6 +432,44 @@ public class MainPage extends VerticalLayout {
     
     // Checks if a recipe matches the user's diet preference based on its ingredients
     // Checks if a recipe matches the user's selected diet
+
+    // Returns false if the recipe contains any ingredient matching the user's allergens
+    private boolean matchesAllergens(RecipeEntity recipe, List<String> allergens) {
+        String ingredients = recipe.getIngredients() == null
+                ? "" : recipe.getIngredients().toLowerCase(Locale.ROOT);
+
+        for (String allergen : allergens) {
+            String[] keywords = allergenKeywords(allergen.trim());
+            for (String keyword : keywords) {
+                if (ingredients.contains(keyword.toLowerCase(Locale.ROOT))) {
+                    return false; // recipe contains this allergen — exclude it
+                }
+            }
+        }
+        return true;
+    }
+
+    // Maps each EU-14 allergen name to the ingredient keywords to look for
+    private String[] allergenKeywords(String allergen) {
+        return switch (allergen) {
+            case "Gluten"         -> new String[]{"wheat", "flour", "bread", "barley", "rye", "gluten", "pasta", "oats", "semolina"};
+            case "Crustaceans"    -> new String[]{"shrimp", "prawn", "crab", "lobster", "crawfish", "crayfish"};
+            case "Eggs"           -> new String[]{"egg", "eggs"};
+            case "Fish"           -> new String[]{"fish", "salmon", "tuna", "cod", "tilapia", "halibut", "bass", "trout", "anchovy", "sardine", "mackerel"};
+            case "Peanuts"        -> new String[]{"peanut", "groundnut"};
+            case "Soy"            -> new String[]{"soy", "soya", "tofu", "tempeh", "edamame", "miso"};
+            case "Milk"           -> new String[]{"milk", "cheese", "butter", "cream", "yogurt", "lactose", "whey", "casein", "dairy"};
+            case "Nuts"           -> new String[]{"almond", "walnut", "cashew", "pecan", "pistachio", "hazelnut", "macadamia", "chestnut", "nut", "nuts"};
+            case "Celery"         -> new String[]{"celery", "celeriac"};
+            case "Mustard"        -> new String[]{"mustard"};
+            case "Sesame"         -> new String[]{"sesame", "tahini"};
+            case "Sulphur dioxide"-> new String[]{"sulphite", "sulfite", "sulphur dioxide", "sulfur dioxide"};
+            case "Lupin"          -> new String[]{"lupin", "lupine"};
+            case "Molluscs"       -> new String[]{"oyster", "mussel", "clam", "scallop", "squid", "octopus", "snail"};
+            default               -> new String[]{allergen.toLowerCase(Locale.ROOT)};
+        };
+    }
+
     private boolean matchesDiet(RecipeEntity recipe, String diet) {
         // If no diet is chosen, allow all recipes
         if (diet == null || diet.isBlank()) {
