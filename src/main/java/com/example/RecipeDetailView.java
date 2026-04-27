@@ -10,14 +10,20 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.server.VaadinSession;
+
 
 @Route("recipe/:id")
 public class RecipeDetailView extends VerticalLayout implements BeforeEnterObserver {
 
     private final RecipeRepository recipeRepository;
+    private final SavedRecipeRepository savedRecipeRepository;
 
-    public RecipeDetailView(RecipeRepository recipeRepository) {
+
+    public RecipeDetailView(RecipeRepository recipeRepository,
+    						SavedRecipeRepository savedRecipeRepository) {
         this.recipeRepository = recipeRepository;
+        this.savedRecipeRepository = savedRecipeRepository;
 
         setPadding(true);
         setSpacing(true);
@@ -26,6 +32,16 @@ public class RecipeDetailView extends VerticalLayout implements BeforeEnterObser
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         removeAll(); // Skærmen bliver clear
+        
+        User currentUser = (User) VaadinSession.getCurrent().getAttribute("user");
+
+        if (currentUser == null) {
+            UI.getCurrent().navigate("");
+            return;
+        }
+        
+        final String username = currentUser.getUsername();
+
 
         String idStr = event.getRouteParameters().get("id").orElse(null);
 
@@ -76,25 +92,37 @@ public class RecipeDetailView extends VerticalLayout implements BeforeEnterObser
             // Dette skal ændres når instruktioner bliver added til recipyEntity
             add(new H2("Instructions"));
             add(new Paragraph(recipe.getDirections()));
+            
+            boolean alreadySaved = savedRecipeRepository
+            		.existsByUsernameAndRecipeId(username, recipe.getId());
+            
+            Button saveButton = new Button(alreadySaved ? "✅ Saved" : "🔖 Save Recipe");
+            
+            saveButton.addClickListener(e -> {
+                boolean isSaved = savedRecipeRepository
+                                    .existsByUsernameAndRecipeId(username, recipe.getId());
+                if (isSaved) {
+                    savedRecipeRepository.deleteByUsernameAndRecipeId(username, recipe.getId());
+                    saveButton.setText("🔖 Save Recipe");
+                } else {
+                    SavedRecipeEntity saved = new SavedRecipeEntity();
+                    saved.setUsername(username);
+                    saved.setRecipe(recipe);
+                    savedRecipeRepository.save(saved);
+                    saveButton.setText("✅ Saved");
+                }
+            });
+            
+            add(saveButton);
+
+            
+        
 
         } catch (Exception e) {
             add(new H1("Error loading recipe"));
+            
+            
+
         }
     }
 }
-	
-	
-	
-	
-	
-	
-	
-
-
-
-
-
-
-
-   
-       
