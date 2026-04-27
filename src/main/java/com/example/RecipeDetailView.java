@@ -9,6 +9,12 @@ import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.VaadinSession;
 
@@ -96,20 +102,43 @@ public class RecipeDetailView extends VerticalLayout implements BeforeEnterObser
             boolean alreadySaved = savedRecipeRepository
             		.existsByUsernameAndRecipeId(username, recipe.getId());
             
-            Button saveButton = new Button(alreadySaved ? "✅ Saved" : "🔖 Save Recipe");
-            
+            Button saveButton = new Button(alreadySaved ? "Remove Recipe" : "Save Recipe");
+
             saveButton.addClickListener(e -> {
                 boolean isSaved = savedRecipeRepository
                                     .existsByUsernameAndRecipeId(username, recipe.getId());
                 if (isSaved) {
                     savedRecipeRepository.deleteByUsernameAndRecipeId(username, recipe.getId());
-                    saveButton.setText("🔖 Save Recipe");
+                    saveButton.setText("Save Recipe");
+
+                    // Undo notification — re-saves the recipe if clicked within 5 seconds
+                    Notification notification = new Notification();
+                    notification.setDuration(5000);
+                    notification.setPosition(Notification.Position.BOTTOM_START);
+                    notification.addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+
+                    HorizontalLayout notifLayout = new HorizontalLayout();
+                    notifLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+                    notifLayout.add(new Span("Recipe removed."));
+
+                    Button undoBtn = new Button("Undo", undoEvent -> {
+                        SavedRecipeEntity resaved = new SavedRecipeEntity();
+                        resaved.setUsername(username);
+                        resaved.setRecipe(recipe);
+                        savedRecipeRepository.save(resaved);
+                        saveButton.setText("Remove Recipe");
+                        notification.close();
+                    });
+                    undoBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+                    notifLayout.add(undoBtn);
+                    notification.add(notifLayout);
+                    notification.open();
                 } else {
                     SavedRecipeEntity saved = new SavedRecipeEntity();
                     saved.setUsername(username);
                     saved.setRecipe(recipe);
                     savedRecipeRepository.save(saved);
-                    saveButton.setText("✅ Saved");
+                    saveButton.setText("Remove Recipe");
                 }
             });
             

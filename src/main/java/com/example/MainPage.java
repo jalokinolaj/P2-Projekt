@@ -117,12 +117,13 @@ public class MainPage extends VerticalLayout {
         setSpacing(false);
         addClassName("main-page");
 
-        // pageWrapper centers and constrains the content width via CSS
+        // Header sits outside pageWrapper so its background stretches full width
+        add(createHeader());
+
+        // pageWrapper centers and constrains the content below the header
         Div pageWrapper = new Div();
         pageWrapper.addClassName("page-wrapper");
 
-        // Build each section and add them to the page in order
-        pageWrapper.add(createHeader());
         pageWrapper.add(createNameSearchSection());
         pageWrapper.add(createSearchSection());
         pageWrapper.add(createCategoryFilters());
