@@ -13,6 +13,7 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -24,6 +25,11 @@ import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.component.checkbox.CheckboxGroup;
+import java.util.Set;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
 @Route("profile")
 public class ProfileView extends VerticalLayout {
@@ -31,7 +37,7 @@ public class ProfileView extends VerticalLayout {
     private final UserRepository userRepository;
     private final SavedRecipeRepository savedRecipeRepository;
     private final Binder<User> binder = new Binder<>(User.class);
-
+        
     private User currentUser;
     private CheckboxGroup<String> allergies;
 
@@ -64,7 +70,6 @@ public class ProfileView extends VerticalLayout {
 
         // Profile form section
         H2 title = new H2("My Profile");
-
         TextField username = new TextField("Name");
 
         Select<String> diet = new Select<>();

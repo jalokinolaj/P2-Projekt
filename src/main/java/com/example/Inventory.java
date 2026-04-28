@@ -18,9 +18,9 @@ public class Inventory {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(nullable = false)
+	@Column(name = "user_id", nullable = false)
 	// Owner of this ingredient row; used to keep each user's inventory separate.
-	private String username;
+	private Long userId;
 
 	@Column(name = "ingredient_name", nullable = false)
 	// Ingredient identifier shown in UI and matched against recipe requirements.
@@ -56,10 +56,10 @@ public class Inventory {
 	public Inventory() {
 	}
 
-	public Inventory(String username, String ingredientName, Double quantity, Double normalizedQuantity, String unit, String normalizedUnit, Double minimumQuantity,
+	public Inventory(Long userId, String ingredientName, Double quantity, Double normalizedQuantity, String unit, String normalizedUnit, Double minimumQuantity,
 			LocalDate expiryDate) {
 		// This timestamp helps when you later want "recently changed" sorting.
-		this.username = username;
+		this.userId = userId;
 		this.ingredientName = ingredientName;
 		this.quantity = quantity;
 		this.normalizedQuantity = normalizedQuantity;
@@ -74,12 +74,12 @@ public class Inventory {
 		return id;
 	}
 
-	public String getUsername() {
-		return username;
+	public Long getUserId() {
+		return userId;
 	}
 
-	public void setUsername(String username) { 
-		this.username = username;
+	public void setUserId(Long userId) {
+		this.userId = userId;
 	}
 
 	public String getIngredientName() {

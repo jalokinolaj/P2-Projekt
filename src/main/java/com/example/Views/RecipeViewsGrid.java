@@ -17,17 +17,17 @@ import java.util.stream.Collectors;
 public class RecipeViewsGrid extends VerticalLayout {
 
     private final Grid<RecipeRecommendation> grid;
-    private final String username;
+    private final Long userId;
     private List<RecipeRecommendation> recommendations;
 
     public RecipeViewsGrid(RecipeServices recipeServices) {
         this.grid = new Grid<>(RecipeRecommendation.class, false);
-        // Session stores a User object — extract the username string from it
+        // Session stores a User object — extract the stable database ID from it.
         com.example.User sessionUser = (com.example.User) VaadinSession.getCurrent().getAttribute("user");
-        this.username = sessionUser != null ? sessionUser.getUsername() : null;
+        this.userId = sessionUser != null ? sessionUser.getId() : null;
 
         // Recommendations depend on user inventory, so require a logged-in user.
-        if (this.username == null || this.username.isBlank()) {
+        if (this.userId == null) {
             add(new Span("Please login first."));
             return;
         }
@@ -57,7 +57,7 @@ public class RecipeViewsGrid extends VerticalLayout {
         }).setHeader("Picture");
 
         // Initial load: already ranked by match %, urgency, then rating.
-        recommendations = recipeServices.getRankedRecipesForUser(username);
+        recommendations = recipeServices.getRankedRecipesForUser(userId);
         grid.setItems(recommendations);
 
         setSizeFull();

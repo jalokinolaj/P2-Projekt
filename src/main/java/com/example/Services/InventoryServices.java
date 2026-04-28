@@ -17,35 +17,32 @@ public class InventoryServices {
 	@Autowired
 	private InventoryRepository inventoryRepository;
 
-	@Autowired
-	private UnitConverterService unitConverterService;
-
-	public List<Inventory> getInventoryForUser(String username) {
+	public List<Inventory> getInventoryForUser(Long userId) {
 		// Main inventory list: sorted by expiry first so older items are visible sooner.
-		return inventoryRepository.findByUsernameOrderByExpiryDateAscIngredientNameAsc(username);
+		return inventoryRepository.findByUserIdOrderByExpiryDateAscIngredientNameAsc(userId);
 	}
 
-	public List<Inventory> getRunOutSoonForUser(String username) {
+	public List<Inventory> getRunOutSoonForUser(Long userId) {
 		// "Run out first" list: smallest quantity first.
-		return inventoryRepository.findByUsernameOrderByQuantityAsc(username);
+		return inventoryRepository.findByUserIdOrderByQuantityAsc(userId);
 	}
 
-	public Inventory addOrUpdateIngredient(String username, String ingredientName, Double quantity, String unit,
+	public Inventory addOrUpdateIngredient(Long userId, String ingredientName, Double quantity, String unit,
 			Double minimumQuantity, LocalDate expiryDate) {
 		// Upsert: update existing ingredient row for this user, otherwise create a new one.
 		String trimmedIngredientName = ingredientName.trim();
-		String trimmedUnit = unitConverterService.normalizeUnitLabel(unit);
-		UnitConverterService.ConversionResult conversion = unitConverterService.normalize(quantity, trimmedUnit);
+		String trimmedUnit = unit.trim();
 
-		Inventory item = inventoryRepository.findByUsernameAndIngredientNameIgnoreCase(username, trimmedIngredientName)
+		Inventory item = inventoryRepository.findByUserIdAndIngredientNameIgnoreCase(userId, trimmedIngredientName)
 				.orElseGet(Inventory::new);
 
-		item.setUsername(username);
+		item.setUserId(userId);
 		item.setIngredientName(trimmedIngredientName);
 		item.setQuantity(quantity);
 		item.setUnit(trimmedUnit);
-		item.setNormalizedQuantity(conversion.normalizedQuantity());
-		item.setNormalizedUnit(conversion.normalizedUnit());
+		// Keep normalized values in sync until dedicated unit conversion is introduced.
+		item.setNormalizedQuantity(quantity);
+		item.setNormalizedUnit(trimmedUnit);
 		item.setMinimumQuantity(minimumQuantity);
 		item.setExpiryDate(expiryDate);
 		item.setUpdatedAt(LocalDateTime.now());
@@ -53,17 +50,16 @@ public class InventoryServices {
 		return inventoryRepository.save(item);
 	}
 
-	public boolean updateQuantity(String username, Long id, Double quantity) {
+	public boolean updateQuantity(Long userId, Long id, Double quantity) {
 		if (quantity == null || quantity < 0.0) {
 			return false;
 		}
 
-		return inventoryRepository.findByIdAndUsername(id, username)
+		return inventoryRepository.findByIdAndUserId(id, userId)
 				.map(item -> {
-					UnitConverterService.ConversionResult conversion = unitConverterService.normalize(quantity, item.getUnit());
 					item.setQuantity(quantity);
-					item.setNormalizedQuantity(conversion.normalizedQuantity());
-					item.setNormalizedUnit(conversion.normalizedUnit());
+					// Keep normalized values in sync until dedicated unit conversion is introduced.
+					item.setNormalizedQuantity(quantity);
 					item.setUpdatedAt(LocalDateTime.now());
 					inventoryRepository.save(item);
 					return true;

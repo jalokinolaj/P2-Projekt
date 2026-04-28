@@ -6,6 +6,7 @@ import java.util.Random;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
+
 import com.example.Services.InventoryServices;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -20,6 +21,7 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -104,7 +106,7 @@ public class MainPage extends VerticalLayout {
 
         // Load all recipes from the database once and store them in memory
         this.cachedRecipes = recipeRepository.findAll();
-        this.inventoryItems = inventoryServices.getInventoryForUser(sessionUser.getUsername());
+        this.inventoryItems = inventoryServices.getInventoryForUser(sessionUser.getId());
         this.inventoryIngredients = inventoryItems.stream()
             .map(Inventory::getIngredientName)
             .filter(name -> name != null && !name.isBlank())

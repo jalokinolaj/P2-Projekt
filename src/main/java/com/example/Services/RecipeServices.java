@@ -47,10 +47,10 @@ public class RecipeServices {
         return recipesRepository.findByRecipeNameContainingIgnoreCase(name);
     }
 
-    public List<RecipeRecommendation> getRankedRecipesForUser(String username) {
+    public List<RecipeRecommendation> getRankedRecipesForUser(Long userId) {
         // Fast lookup map so ingredient matching is O(1) per ingredient name.
         Map<String, Inventory> inventoryByIngredient = new HashMap<>();
-        for (Inventory inventoryItem : inventoryServices.getInventoryForUser(username)) {
+        for (Inventory inventoryItem : inventoryServices.getInventoryForUser(userId)) {
             inventoryByIngredient.put(normalize(inventoryItem.getIngredientName()), inventoryItem);
         }
 
