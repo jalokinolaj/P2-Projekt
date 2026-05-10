@@ -1,35 +1,34 @@
-package com.example;
+package com.example.Views;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import com.example.RecipeEntity;
+import com.example.Repositories.SavedRecipeRepository;
+import com.example.Repositories.UserRepository;
+import com.example.SavedRecipeEntity;
+import com.example.User;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
-import com.vaadin.flow.component.checkbox.CheckboxGroup;
-import java.util.Set;
-import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
 @Route("profile")
 public class ProfileView extends VerticalLayout {

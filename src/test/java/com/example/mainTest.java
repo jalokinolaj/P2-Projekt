@@ -1,29 +1,20 @@
 package com.example;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import com.example.Repositories.RecipeRepository;
-import com.example.Services.InventoryServices;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MainPage Tests")
@@ -135,6 +126,14 @@ public class mainTest {
             assertFalse(matchesDiet(testRecipe1, pescatarianDiet));
             // Vegetable stir fry — should be included
             assertTrue(matchesDiet(testRecipe2, pescatarianDiet));
+        }
+
+        @Test
+        @DisplayName("Should allow all recipes when diet is null or blank")
+        void testDietNullOrBlank() {
+            assertTrue(matchesDiet(testRecipe1, null));
+            assertTrue(matchesDiet(testRecipe1, ""));
+            assertTrue(matchesDiet(testRecipe1, "   "));
         }
 
         // Helper method from MainPage
@@ -306,6 +305,24 @@ public class mainTest {
             assertEquals(100, match);
         }
 
+        @Test
+        @DisplayName("calculateMatch should return 0 when addedIngredients is empty")
+        void testCalculateMatchEmptyAddedIngredients() {
+            List<String> addedIngredients = new ArrayList<>();
+            int match = calculateMatch(testRecipe1, addedIngredients);
+            assertEquals(0, match);
+        }
+
+        @Test
+        @DisplayName("calculateMatch should return 0 when recipe ingredients are null")
+        void testCalculateMatchNullRecipeIngredients() {
+            RecipeEntity emptyRecipe = new RecipeEntity();
+            ReflectionTestUtils.setField(emptyRecipe, "ingredients", null);
+            List<String> addedIngredients = Arrays.asList("chicken");
+            int match = calculateMatch(emptyRecipe, addedIngredients);
+            assertEquals(0, match);
+        }
+
         private int calculateMatch(RecipeEntity entity, List<String> addedIngredients) {
             if (addedIngredients.isEmpty() || entity.getIngredients() == null) return 0;
             String ingText = entity.getIngredients().toLowerCase();
@@ -313,6 +330,54 @@ public class mainTest {
                 .filter(ing -> ingText.contains(ing.toLowerCase()))
                 .count();
             return (int) Math.round((double) matches / addedIngredients.size() * 100);
+        }
+
+        @Test
+        @DisplayName("calculateMatch currently matches substrings (egg vs eggplant)")
+        void testSubstringFalsePositive() {
+            RecipeEntity r = new RecipeEntity();
+            ReflectionTestUtils.setField(r, "ingredients", "eggplant, tomato");
+            List<String> added = Arrays.asList("egg");
+            int match = calculateMatch(r, added);
+            assertEquals(100, match, "Substring matching is currently based on contains()");
+        }
+
+        @Test
+        @DisplayName("calculateMatch should handle plural forms (tomato vs tomatoes)")
+        void testPluralMatching() {
+            RecipeEntity r = new RecipeEntity();
+            ReflectionTestUtils.setField(r, "ingredients", "tomatoes, basil");
+            List<String> added = Arrays.asList("tomato");
+            int match = calculateMatch(r, added);
+            assertEquals(100, match, "Singular should match plural form");
+        }
+
+        @Test
+        @DisplayName("calculateMatch does not normalize punctuation differences")
+        void testPunctuationTolerance() {
+            RecipeEntity r = new RecipeEntity();
+            ReflectionTestUtils.setField(r, "ingredients", "brown-sugar, flour");
+            List<String> added = Arrays.asList("brown sugar");
+            int match = calculateMatch(r, added);
+            assertEquals(0, match, "Punctuation differences are not normalized yet");
+        }
+
+        @Test
+        @DisplayName("calculateMatch should not inflate match percentage due to duplicate added ingredients")
+        void testDuplicateAddedIngredients() {
+            List<String> added = Arrays.asList("chicken", "chicken");
+            int match = calculateMatch(testRecipe1, added);
+            assertEquals(100, match, "Duplicate ingredients should not change the intended match proportion");
+        }
+
+        @Test
+        @DisplayName("calculateMatch does not currently resolve aliases (garbanzo -> chickpeas)")
+        void testAliasMatching() {
+            RecipeEntity r = new RecipeEntity();
+            ReflectionTestUtils.setField(r, "ingredients", "chickpeas, lemon");
+            List<String> added = Arrays.asList("garbanzo");
+            int match = calculateMatch(r, added);
+            assertEquals(0, match, "Alias resolution is not implemented yet");
         }
     }
 
@@ -392,6 +457,42 @@ public class mainTest {
             expiringItem.setExpiryDate(LocalDate.now().plusDays(3));
             
             assertTrue(isAboutToRunOut(expiringItem));
+        }
+
+        @Test
+        @DisplayName("isAboutToRunOut should treat quantity equal to minimum as low stock")
+        void testQuantityEqualMinimum() {
+            Inventory equalItem = new Inventory();
+            equalItem.setIngredientName("test");
+            equalItem.setQuantity(2.0);
+            equalItem.setMinimumQuantity(2.0);
+            equalItem.setExpiryDate(null);
+
+            assertTrue(isAboutToRunOut(equalItem));
+        }
+
+        @Test
+        @DisplayName("isAboutToRunOut should consider expiry exactly 7 days away as expiring soon")
+        void testExpiryExactlySevenDays() {
+            Inventory sevenDayItem = new Inventory();
+            sevenDayItem.setIngredientName("milk");
+            sevenDayItem.setQuantity(5.0);
+            sevenDayItem.setMinimumQuantity(1.0);
+            sevenDayItem.setExpiryDate(LocalDate.now().plusDays(7));
+
+            assertTrue(isAboutToRunOut(sevenDayItem));
+        }
+
+        @Test
+        @DisplayName("isAboutToRunOut should return false for null expiry when stock is sufficient")
+        void testNullExpirySufficientStock() {
+            Inventory item = new Inventory();
+            item.setIngredientName("rice");
+            item.setQuantity(10.0);
+            item.setMinimumQuantity(1.0);
+            item.setExpiryDate(null);
+
+            assertFalse(isAboutToRunOut(item));
         }
 
         private int calculateFridgeScore(RecipeEntity entity, List<String> inventoryIngredients, List<Inventory> inventoryItems) {
