@@ -13,7 +13,6 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -25,11 +24,6 @@ import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
-import com.vaadin.flow.component.checkbox.CheckboxGroup;
-import java.util.Set;
-import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
 @Route("profile")
 public class ProfileView extends VerticalLayout {
@@ -48,7 +42,7 @@ public class ProfileView extends VerticalLayout {
     };
 
     public ProfileView(UserRepository userRepository,
-                       SavedRecipeRepository savedRecipeRepository) {
+                    SavedRecipeRepository savedRecipeRepository) {
         this.userRepository = userRepository;
         this.savedRecipeRepository = savedRecipeRepository;
 
@@ -59,7 +53,7 @@ public class ProfileView extends VerticalLayout {
             return;
         }
 
-        Optional<User> optionalUser = userRepository.findByUsername(sessionUser.getUsername());
+        Optional<User> optionalUser = userRepository.findById(sessionUser.getId());
 
         if (optionalUser.isEmpty()) {
             add(new H2("User not found."));
@@ -100,7 +94,7 @@ public class ProfileView extends VerticalLayout {
         // Saved recipes section
         add(new H2("Saved Recipes"));
 
-        List<SavedRecipeEntity> savedRecipes = savedRecipeRepository.findByUsername(currentUser.getUsername());
+        List<SavedRecipeEntity> savedRecipes = savedRecipeRepository.findByUserId(currentUser.getId());
 
         if (savedRecipes.isEmpty()) {
             add(new Paragraph("You have not saved any recipes yet."));
@@ -160,7 +154,7 @@ public class ProfileView extends VerticalLayout {
         );
 
         Button removeButton = new Button("Remove", e -> {
-            savedRecipeRepository.deleteByUsernameAndRecipeId(currentUser.getUsername(), recipe.getId());
+            savedRecipeRepository.deleteByUserIdAndRecipeId(currentUser.getId(), recipe.getId());
             card.setVisible(false);
 
             // Undo notification — re-saves the recipe if clicked within 5 seconds
@@ -175,7 +169,7 @@ public class ProfileView extends VerticalLayout {
 
             Button undoBtn = new Button("Undo", undoEvent -> {
                 SavedRecipeEntity resaved = new SavedRecipeEntity();
-                resaved.setUsername(currentUser.getUsername());
+                resaved.setUserId(currentUser.getId());
                 resaved.setRecipe(recipe);
                 savedRecipeRepository.save(resaved);
                 card.setVisible(true);

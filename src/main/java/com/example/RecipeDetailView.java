@@ -46,7 +46,7 @@ public class RecipeDetailView extends VerticalLayout implements BeforeEnterObser
             return;
         }
         
-        final String username = currentUser.getUsername();
+        final Long userId = currentUser.getId();
 
 
         String idStr = event.getRouteParameters().get("id").orElse(null);
@@ -100,15 +100,15 @@ public class RecipeDetailView extends VerticalLayout implements BeforeEnterObser
             add(new Paragraph(recipe.getDirections()));
             
             boolean alreadySaved = savedRecipeRepository
-            		.existsByUsernameAndRecipeId(username, recipe.getId());
+            		.existsByUserIdAndRecipeId(userId, recipe.getId());
             
             Button saveButton = new Button(alreadySaved ? "Remove Recipe" : "Save Recipe");
 
             saveButton.addClickListener(e -> {
                 boolean isSaved = savedRecipeRepository
-                                    .existsByUsernameAndRecipeId(username, recipe.getId());
+                                    .existsByUserIdAndRecipeId(userId, recipe.getId());
                 if (isSaved) {
-                    savedRecipeRepository.deleteByUsernameAndRecipeId(username, recipe.getId());
+                    savedRecipeRepository.deleteByUserIdAndRecipeId(userId, recipe.getId());
                     saveButton.setText("Save Recipe");
 
                     // Undo notification — re-saves the recipe if clicked within 5 seconds
@@ -123,7 +123,7 @@ public class RecipeDetailView extends VerticalLayout implements BeforeEnterObser
 
                     Button undoBtn = new Button("Undo", undoEvent -> {
                         SavedRecipeEntity resaved = new SavedRecipeEntity();
-                        resaved.setUsername(username);
+                        resaved.setUserId(userId);
                         resaved.setRecipe(recipe);
                         savedRecipeRepository.save(resaved);
                         saveButton.setText("Remove Recipe");
@@ -135,7 +135,7 @@ public class RecipeDetailView extends VerticalLayout implements BeforeEnterObser
                     notification.open();
                 } else {
                     SavedRecipeEntity saved = new SavedRecipeEntity();
-                    saved.setUsername(username);
+                    saved.setUserId(userId);
                     saved.setRecipe(recipe);
                     savedRecipeRepository.save(saved);
                     saveButton.setText("Remove Recipe");

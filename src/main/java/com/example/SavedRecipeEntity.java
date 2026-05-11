@@ -12,23 +12,22 @@ import jakarta.persistence.Column;
 @Entity
 @Table(name = "saved_recipes")
 public class SavedRecipeEntity {
-	
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
-	
-	private String username;
-	
-	@ManyToOne
-	@JoinColumn(name = "recipe_id")
-	private RecipeEntity recipe;
-	
-	public Integer getId() {return id;}
-	public String getUsername() {return username;}
-	public void setUsername(String username) { this.username = username; }
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    // Links to app_user.id — stable even if the username changes
+    @Column(name = "user_id")
+    private Long userId;
+
+    @ManyToOne
+    @JoinColumn(name = "recipe_id")
+    private RecipeEntity recipe;
+
+    public Integer getId() { return id; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
     public RecipeEntity getRecipe() { return recipe; }
     public void setRecipe(RecipeEntity recipe) { this.recipe = recipe; }
 }
-	
-
-

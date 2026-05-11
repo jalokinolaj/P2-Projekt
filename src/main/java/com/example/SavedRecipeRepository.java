@@ -5,9 +5,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 public interface SavedRecipeRepository extends JpaRepository<SavedRecipeEntity, Integer> {
-    List<SavedRecipeEntity> findByUsername(String username);
-    boolean existsByUsernameAndRecipeId(String username, Integer recipeId);
+    List<SavedRecipeEntity> findByUserId(Long userId);
+    boolean existsByUserIdAndRecipeId(Long userId, Integer recipeId);
 
     @Transactional
-    void deleteByUsernameAndRecipeId(String username, Integer recipeId);
+    void deleteByUserIdAndRecipeId(Long userId, Integer recipeId);
 }
