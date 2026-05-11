@@ -1,5 +1,4 @@
 package com.example;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -438,159 +437,35 @@ public class MainPage extends VerticalLayout {
 
     // Returns false if the recipe contains any ingredient matching the user's allergens
     private boolean matchesAllergens(RecipeEntity recipe, List<String> allergens) {
-        String ingredients = recipe.getIngredients() == null
-                ? "" : recipe.getIngredients().toLowerCase(Locale.ROOT);
-
-        for (String allergen : allergens) {
-            String[] keywords = allergenKeywords(allergen.trim());
-            for (String keyword : keywords) {
-                if (ingredients.contains(keyword.toLowerCase(Locale.ROOT))) {
-                    return false; // recipe contains this allergen — exclude it
-                }
-            }
-        }
-        return true;
-    }
-
-    // Maps each EU-14 allergen name to the ingredient keywords to look for
-    private String[] allergenKeywords(String allergen) {
-        return switch (allergen) {
-            case "Gluten"         -> new String[]{"wheat", "flour", "bread", "barley", "rye", "gluten", "pasta", "oats", "semolina"};
-            case "Crustaceans"    -> new String[]{"shrimp", "prawn", "crab", "lobster", "crawfish", "crayfish"};
-            case "Eggs"           -> new String[]{"egg", "eggs"};
-            case "Fish"           -> new String[]{"fish", "salmon", "tuna", "cod", "tilapia", "halibut", "bass", "trout", "anchovy", "sardine", "mackerel"};
-            case "Peanuts"        -> new String[]{"peanut", "groundnut"};
-            case "Soy"            -> new String[]{"soy", "soya", "tofu", "tempeh", "edamame", "miso"};
-            case "Milk"           -> new String[]{"milk", "cheese", "butter", "cream", "yogurt", "lactose", "whey", "casein", "dairy"};
-            case "Nuts"           -> new String[]{"almond", "walnut", "cashew", "pecan", "pistachio", "hazelnut", "macadamia", "chestnut", "nut", "nuts"};
-            case "Celery"         -> new String[]{"celery", "celeriac"};
-            case "Mustard"        -> new String[]{"mustard"};
-            case "Sesame"         -> new String[]{"sesame", "tahini"};
-            case "Sulphur dioxide"-> new String[]{"sulphite", "sulfite", "sulphur dioxide", "sulfur dioxide"};
-            case "Lupin"          -> new String[]{"lupin", "lupine"};
-            case "Molluscs"       -> new String[]{"oyster", "mussel", "clam", "scallop", "squid", "octopus", "snail"};
-            default               -> new String[]{allergen.toLowerCase(Locale.ROOT)};
-        };
+        return MainPageRecipeMethods.matchesAllergens(recipe, allergens);
     }
 
     private boolean matchesDiet(RecipeEntity recipe, String diet) {
-        // If no diet is chosen, allow all recipes
-        if (diet == null || diet.isBlank()) {
-            return true;
-        }
-
-        // Convert diet to lowercase so comparison is easier
-        String userDiet = diet.toLowerCase(Locale.ROOT).trim();
-
-        // "none" and "omnivore" mean no filtering
-        if (userDiet.equals("none") || userDiet.equals("omnivore")) {
-            return true;
-        }
-
-        // Get recipe ingredients as lowercase text
-        String ingredients = recipe.getIngredients() == null
-                ? ""
-                : recipe.getIngredients().toLowerCase(Locale.ROOT);
-
-        // VEGAN: no meat, fish, dairy, eggs, honey
-        if (userDiet.equals("vegan")) {
-            return !containsAny(ingredients,
-                    "chicken", "beef", "pork", "bacon", "ham", "turkey",
-                    "fish", "salmon", "tuna", "shrimp", "prawn",
-                    "egg", "eggs",
-                    "milk", "cheese", "butter", "cream", "yogurt", "honey", "lamb", "lobster");
-        }
-
-        // VEGETARIAN: no meat or fish
-        if (userDiet.equals("vegetarian")) {
-            return !containsAny(ingredients,
-                    "chicken", "beef", "pork", "bacon", "ham", "turkey",
-                    "fish", "salmon", "tuna", "shrimp", "prawn", "lamb", "lobster");
-        }
-
-        // PESCATARIAN: no meat, but fish is allowed
-        if (userDiet.equals("pescatarian")) {
-            return !containsAny(ingredients,
-                    "chicken", "beef", "pork", "bacon", "ham", "turkey", "lamb");
-        }
-
-        // If diet value is something unexpected, allow all
-        return true;
-    }
-    // Checks if the text above for diet contains any of the given keywords
-    private boolean containsAny(String text, String... keywords) {
-        if (text == null || text.isBlank()) {
-            return false;
-        }
-
-        String lowerText = text.toLowerCase(Locale.ROOT);
-
-        for (String keyword : keywords) {
-            if (lowerText.contains(keyword.toLowerCase(Locale.ROOT))) {
-                return true;
-            }
-        }
-
-        return false;
+        return MainPageRecipeMethods.matchesDiet(recipe, diet);
     }
 
     
     private int calculateInventoryMatch(RecipeEntity entity) {
-        if (inventoryIngredients.isEmpty() || entity.getIngredients() == null) {
-            return 0;
-        }
-        String ingText = entity.getIngredients().toLowerCase(Locale.ROOT);
-        long matches = inventoryIngredients.stream()
-            .filter(ingText::contains)
-            .count();
-        return (int) Math.round((double) matches / inventoryIngredients.size() * 100);
+        return MainPageRecipeMethods.calculateInventoryMatch(entity, inventoryIngredients);
     }
 
     // Simple fridge score:
     // 1) base = normal inventory match percent
     // 2) +10 points for each matching ingredient that is about to run out
     private int calculateFridgeScore(RecipeEntity entity) {
-        if (entity.getIngredients() == null) {
-            return 0;
-        }
-
-        String recipeIngredients = entity.getIngredients().toLowerCase(Locale.ROOT);
-        int matchPercent = calculateInventoryMatch(entity);
-
-        long runOutSoonHits = inventoryItems.stream()
-            .filter(item -> item.getIngredientName() != null)
-            .filter(item -> recipeIngredients.contains(item.getIngredientName().toLowerCase(Locale.ROOT)))
-            .filter(this::isAboutToRunOut)
-            .count();
-
-        return matchPercent + (int) runOutSoonHits * 10;
+        return MainPageRecipeMethods.calculateFridgeScore(entity, inventoryIngredients, inventoryItems);
     }
 
     private boolean isAboutToRunOut(Inventory item) {
-        Double quantityValue = item.getQuantity();
-        Double minimumValue = item.getMinimumQuantity();
-        double quantity = quantityValue == null ? 0.0 : quantityValue;
-        double minimum = minimumValue == null ? 0.0 : minimumValue;
-
-        boolean lowStock = quantity <= minimum;
-        LocalDate expiryDate = item.getExpiryDate();
-        boolean expiringSoon = expiryDate != null && !expiryDate.isAfter(LocalDate.now().plusDays(7));
-
-        return lowStock || expiringSoon;
+        return MainPageRecipeMethods.isAboutToRunOut(item);
     }
 
     private double parseRating(String rating) {
-        try { return Double.parseDouble(rating); }
-        catch (Exception e) { return 0.0; }
+        return MainPageRecipeMethods.parseRating(rating);
     }
 
     private int calculateMatch(RecipeEntity entity) {
-        if (addedIngredients.isEmpty() || entity.getIngredients() == null) return 0;
-        String ingText = entity.getIngredients().toLowerCase();
-        long matches = addedIngredients.stream()
-            .filter(ing -> ingText.contains(ing.toLowerCase()))
-            .count();
-        return (int) Math.round((double) matches / addedIngredients.size() * 100);
+        return MainPageRecipeMethods.calculateMatch(entity, addedIngredients);
     }
 
     private Div createRecipeCard(RecipeEntity entity, int matchPercent) {
