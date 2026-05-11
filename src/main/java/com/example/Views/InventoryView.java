@@ -7,13 +7,11 @@ import com.example.Services.InventoryServices;
 import com.example.User;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -50,11 +48,9 @@ public class InventoryView extends VerticalLayout {
 		headerLayout.setSpacing(true);
 		
 		H2 title = new H2("My Inventory");
-		Button returnBtn = new Button("Return to Recipes", VaadinIcon.ARROW_BACKWARD.create(), 
-			e -> UI.getCurrent().navigate("main"));
-		returnBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 		
-		headerLayout.add(title, returnBtn);
+		
+		headerLayout.add(title);
 		add(headerLayout);
 		add(createForm(userId));
 		add(configureInventoryGrid());
