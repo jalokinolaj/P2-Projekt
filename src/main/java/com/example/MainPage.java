@@ -475,13 +475,13 @@ public class MainPage extends VerticalLayout {
         // Image area — shows the recipe photo or a fallback emoji
         Div imageArea = new Div();
         imageArea.addClassName("recipe-image");
-        // Written by GitHub Copilot: normalize DB URL before rendering to the browser.
+        // normalize DB URL before rendering to the browser.
         String imageUrl = MainPageRecipeMethods.normalizeImageUrl(entity.getImgSrc());
         
         if (imageUrl != null) {
             Image img = new Image(imageUrl, entity.getRecipeName());
             img.addClassName("recipe-photo");
-            // Written by GitHub Copilot: some image hosts block requests with referrer headers.
+            // Image hosts block requests with referrer headers.
             img.getElement().setAttribute("referrerpolicy", "no-referrer");
             imageArea.add(img);
         } else {
