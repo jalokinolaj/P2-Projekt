@@ -1,4 +1,4 @@
-package com.example;
+package com.example.Views;
 
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
@@ -15,6 +15,11 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.example.RecipeEntity;
+import com.example.SavedRecipeEntity;
+import com.example.User;
+import com.example.Repositories.RecipeRepository;
+import com.example.Repositories.SavedRecipeRepository;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.VaadinSession;
 
@@ -111,7 +116,6 @@ public class RecipeDetailView extends VerticalLayout implements BeforeEnterObser
                     savedRecipeRepository.deleteByUserIdAndRecipeId(userId, recipe.getId());
                     saveButton.setText("Save Recipe");
 
-                    // Undo notification — re-saves the recipe if clicked within 5 seconds
                     Notification notification = new Notification();
                     notification.setDuration(5000);
                     notification.setPosition(Notification.Position.BOTTOM_START);
@@ -129,6 +133,7 @@ public class RecipeDetailView extends VerticalLayout implements BeforeEnterObser
                         saveButton.setText("Remove Recipe");
                         notification.close();
                     });
+
                     undoBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
                     notifLayout.add(undoBtn);
                     notification.add(notifLayout);

@@ -1,4 +1,4 @@
-package com.example;
+package com.example.Views;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.select.Select;
@@ -6,6 +6,8 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.notification.Notification;
+import com.example.User;
+import com.example.Repositories.UserRepository;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
@@ -29,7 +31,6 @@ public class RegisterView extends Composite<VerticalLayout> {
             "Mustard",
             "Sesame",
             "Sulphur dioxide",
-            "Lupin",
             "Molluscs"
 	};
 

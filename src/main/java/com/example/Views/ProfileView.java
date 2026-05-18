@@ -1,9 +1,14 @@
-package com.example;
+package com.example.Views;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import com.example.RecipeEntity;
+import com.example.SavedRecipeEntity;
+import com.example.User;
+import com.example.Repositories.SavedRecipeRepository;
+import com.example.Repositories.UserRepository;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;

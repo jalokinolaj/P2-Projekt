@@ -7,6 +7,7 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import com.example.Repositories.RecipeRepository;
 import com.example.Services.InventoryServices;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -731,3 +732,4 @@ public class MainPage extends VerticalLayout {
         dialog.open();
     }
 }
+
