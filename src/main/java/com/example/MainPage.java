@@ -567,16 +567,12 @@ public class MainPage extends VerticalLayout {
     }
 
     public static boolean isAboutToRunOut(Inventory item) {
-        Double quantityValue = item.getQuantity();
-        Double minimumValue = item.getMinimumQuantity();
-        double quantity = quantityValue == null ? 0.0 : quantityValue;
-        double minimum = minimumValue == null ? 0.0 : minimumValue;
-
-        boolean lowStock = quantity <= minimum;
+        
+    
         LocalDate expiryDate = item.getExpiryDate();
         boolean expiringSoon = expiryDate != null && !expiryDate.isAfter(LocalDate.now().plusDays(7));
 
-        return lowStock || expiringSoon;
+        return expiringSoon;
     }
 
     private double parseRating(String rating) {
