@@ -560,13 +560,13 @@ public class MainPage extends VerticalLayout {
         long runOutSoonHits = inventoryItems.stream()
             .filter(item -> item.getIngredientName() != null)
             .filter(item -> recipeIngredients.contains(item.getIngredientName().toLowerCase(Locale.ROOT)))
-            .filter(this::isAboutToRunOut)
+            .filter(MainPage::isAboutToRunOut)
             .count();
 
         return matchPercent + (int) runOutSoonHits * 10;
     }
 
-    private boolean isAboutToRunOut(Inventory item) {
+    public static boolean isAboutToRunOut(Inventory item) {
         Double quantityValue = item.getQuantity();
         Double minimumValue = item.getMinimumQuantity();
         double quantity = quantityValue == null ? 0.0 : quantityValue;
