@@ -377,7 +377,7 @@ public class MainPage extends VerticalLayout {
                 .collect(Collectors.toList());
         }
 
-       // Step 2.5: Diet filter based on logged-in user's preference
+       // Step 3: Diet filter based on logged-in user's preference
         User sessionUser = (User) VaadinSession.getCurrent().getAttribute("user");
 
         if (sessionUser != null && sessionUser.getDiet() != null && !sessionUser.getDiet().isBlank()) {
@@ -388,7 +388,7 @@ public class MainPage extends VerticalLayout {
                 .collect(Collectors.toList());
         }
 
-        // Step 2.6: Allergy filter — exclude recipes containing any of the user's allergens
+        // Step 4 Allergy filter — exclude recipes containing any of the user's allergens
         if (sessionUser != null && sessionUser.getAllergies() != null && !sessionUser.getAllergies().isBlank()) {
             List<String> userAllergens = java.util.Arrays.asList(sessionUser.getAllergies().split(","));
             results = results.stream()
@@ -396,14 +396,14 @@ public class MainPage extends VerticalLayout {
                 .collect(Collectors.toList());
         }
 
-        // Step 3: Category filter — map the DB's cuisine_path to our category labels
+        // Step 5: Category filter — map the DB's cuisine_path to our category labels
         if (!currentCategory.equals("All")) {
             results = results.stream()
                 .filter(r -> MainPageRecipeMethods.mapCategory(r.getCuisinePath()).equals(currentCategory))
                 .collect(Collectors.toList());
         }
 
-        // Step 4: Sort — fridge mode sorts by inventory match score, otherwise by ingredient match
+        // Step 6: Sort — fridge mode sorts by inventory match score, otherwise by ingredient match
         if (fridgeModeEnabled) {
             results = results.stream()
                 .sorted((a, b) -> calculateFridgeScore(b) - calculateFridgeScore(a))
@@ -414,7 +414,7 @@ public class MainPage extends VerticalLayout {
                 .collect(Collectors.toList());
         }
 
-        // Step 5: Cap at 50 results
+        // Step 7: Cap at 50 results
         results = results.stream().limit(50).collect(Collectors.toList());
 
         if (results.isEmpty()) {
@@ -732,4 +732,3 @@ public class MainPage extends VerticalLayout {
         dialog.open();
     }
 }
-
