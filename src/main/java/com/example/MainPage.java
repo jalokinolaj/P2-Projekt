@@ -577,7 +577,7 @@ public class MainPage extends VerticalLayout {
 
     private double parseRating(String rating) {
         try { return Double.parseDouble(rating); }
-        catch (Exception e) { return 0.0; }
+        catch (NumberFormatException e) { return 0.0; }
     }
 
     private int calculateMatch(RecipeEntity entity) {

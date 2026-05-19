@@ -1,11 +1,12 @@
 package com.example.Views;
 
 import java.util.Optional;
-import com.vaadin.flow.component.button.Button;
-import com.example.User;
+
 import com.example.Repositories.UserRepository;
+import com.example.User;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.login.LoginOverlay;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.router.Route;
@@ -14,11 +15,8 @@ import com.vaadin.flow.server.VaadinSession;
 
 @Route("")
 public class LoginView extends Composite<LoginOverlay> {
-	private final UserRepository userRepository;
 	
 	public LoginView(UserRepository userRepository) {
-		this.userRepository = userRepository;
-		
 		LoginOverlay loginOverlay = getContent();
 		loginOverlay.setTitle("Recipe App");
 		loginOverlay.setDescription("Find new recipes");

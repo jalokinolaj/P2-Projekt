@@ -27,6 +27,7 @@ import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
@@ -206,7 +207,7 @@ public class ProfileView extends VerticalLayout {
             userRepository.save(currentUser);
             VaadinSession.getCurrent().setAttribute("user", currentUser);
             Notification.show("Profile updated.");
-        } catch (Exception e) {
+        } catch (ValidationException e) {
             Notification.show("Error saving profile: " + e.getMessage());
         }
     }

@@ -62,7 +62,7 @@ public class RecipeDetailView extends VerticalLayout implements BeforeEnterObser
         }
 
         try {
-            Integer id = Integer.parseInt(idStr); // finder ret id/som integer
+            int id = Integer.parseInt(idStr); // finder ret id/som integer
 
             RecipeEntity recipe = recipeRepository.findById(id).orElse(null);
 
@@ -152,11 +152,8 @@ public class RecipeDetailView extends VerticalLayout implements BeforeEnterObser
             
         
 
-        } catch (Exception e) {
+        } catch (NumberFormatException | NullPointerException e) {
             add(new H1("Error loading recipe"));
-            
-            
-
         }
     }
 }

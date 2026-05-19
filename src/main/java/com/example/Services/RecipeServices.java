@@ -60,13 +60,19 @@ public class RecipeServices {
                 .sorted(Comparator
                         .comparingDouble(RecipeRecommendation::matchPercent).reversed()
                         .thenComparingDouble(RecipeRecommendation::urgencyScore).reversed()
-                    .thenComparingDouble(r -> {
-                        // rating is stored as text in DB, parse it safely
-                        try { return Double.parseDouble(r.recipe().getRating()); }
-                        catch (Exception e) { return 0.0; }
-                    })
-                        .reversed())
+                    .thenComparingDouble(this::ratingValue).reversed())
                 .toList();
+    }
+
+    private double ratingValue(RecipeRecommendation r) {
+        if (r == null || r.recipe() == null) return 0.0;
+        String s = r.recipe().getRating();
+        if (s == null || s.isBlank()) return 0.0;
+        try {
+            return Double.parseDouble(s);
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
     }
 
     private RecipeRecommendation buildRecommendation(Recipes recipe, Map<String, Inventory> inventoryByIngredient) {
