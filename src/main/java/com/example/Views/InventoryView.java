@@ -79,7 +79,7 @@ public class InventoryView extends VerticalLayout {
 		DatePicker expiryDate = new DatePicker("Expiry date");
 
 		Button saveButton = new Button("Save ingredient", click -> {
-			// Basic guard clauses keep invalid values out of the database.
+			// Keep invalid values out of the database.
 			if (ingredientName.getValue() == null || ingredientName.getValue().isBlank()) {
 				Notification.show("Ingredient name is required.");
 				return;
@@ -188,6 +188,7 @@ public class InventoryView extends VerticalLayout {
 	private Grid<Inventory> configureRunOutGrid() {
 		runOutGrid.addColumn(Inventory::getIngredientName).setHeader("Ingredient");
 		runOutGrid.addColumn(Inventory::getQuantity).setHeader("Current quantity");
+		runOutGrid.addColumn(Inventory::getUnit).setHeader("Unit");
 		runOutGrid.addColumn(Inventory::getMinimumQuantity).setHeader("Threshold");
 		runOutGrid.addColumn(item -> item.getExpiryDate() == null ? "-" : item.getExpiryDate().toString())
 				.setHeader("Expiry date");
