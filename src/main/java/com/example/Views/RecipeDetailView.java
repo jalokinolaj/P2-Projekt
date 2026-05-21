@@ -1,26 +1,26 @@
 package com.example.Views;
 
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.BeforeEnterObserver;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.Paragraph;
-import com.vaadin.flow.component.html.Image;
+import com.example.RecipeEntity;
+import com.example.Repositories.RecipeRepository;
+import com.example.Repositories.SavedRecipeRepository;
+import com.example.SavedRecipeEntity;
+import com.example.User;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.example.RecipeEntity;
-import com.example.SavedRecipeEntity;
-import com.example.User;
-import com.example.Repositories.RecipeRepository;
-import com.example.Repositories.SavedRecipeRepository;
-import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
 
@@ -79,31 +79,7 @@ public class RecipeDetailView extends VerticalLayout implements BeforeEnterObser
             // Retnavn
             H1 title = new H1(recipe.getRecipeName());
 
-            // Billed
-            if (recipe.getImgSrc() != null && !recipe.getImgSrc().isEmpty()) {
-                Image image = new Image(recipe.getImgSrc(), recipe.getRecipeName());
-                image.setWidth("300px");
-                add(back, title, image);
-            } else {
-                add(back, title);
-            }
-
-            // tid
-            add(new Paragraph("Time: " +
-                (recipe.getTotalTime() != null ? recipe.getTotalTime() : "N/A")));
-
-            // hvor mange serveringer
-            add(new Paragraph("Servings: " +
-                (recipe.getServings() != null ? recipe.getServings() : "N/A")));
-
-            // ingredienser
-            add(new H2("Ingredients"));
-            add(new Paragraph(recipe.getIngredients()));
-
-            // Dette skal ændres når instruktioner bliver added til recipyEntity
-            add(new H2("Instructions"));
-            add(new Paragraph(recipe.getDirections()));
-            
+           
             boolean alreadySaved = savedRecipeRepository
             		.existsByUserIdAndRecipeId(userId, recipe.getId());
             
@@ -146,11 +122,45 @@ public class RecipeDetailView extends VerticalLayout implements BeforeEnterObser
                     saveButton.setText("Remove Recipe");
                 }
             });
-            
-            add(saveButton);
 
+            //Main Layout
+            HorizontalLayout mainLayout = new HorizontalLayout();
+            mainLayout.setWidthFull();
+            mainLayout.setSpacing(true);
+            mainLayout.setAlignItems(FlexComponent.Alignment.START);
+
+            // Left side (title, time, servings, save button)
+            VerticalLayout left = new VerticalLayout();
+            left.setWidth("60%");
+            left.setSpacing(true);
+            left.setAlignItems(FlexComponent.Alignment.START);
+            left.add(back,title);
+            // Add time and servings info with fallbacks
+            left.add(new Paragraph("Time: " +
+                (recipe.getTotalTime() != null ? recipe.getTotalTime() : "N/A")));
             
-        
+            left.add(new Paragraph("Servings: " +
+                (recipe.getServings() != null ? recipe.getServings() : "N/A")));
+            //Ingredients and instructions
+            left.add(new H2("Ingredients"));
+            left.add(new Paragraph(recipe.getIngredients()));
+            left.add(new H2("Instructions"));
+            left.add(new Paragraph(recipe.getDirections()));
+            left.add(saveButton);
+            
+            // Right side (image)
+            VerticalLayout right = new VerticalLayout();
+            right.setWidth("40%");
+            if (recipe.getImgSrc() != null && !recipe.getImgSrc().isEmpty()) {
+                Image image = new Image(recipe.getImgSrc(), recipe.getRecipeName());
+                image.setWidth("100%");
+                image.getStyle()
+                .set("border-radius", "12px")
+                .set("object-fit", "cover");
+                right.add(image);
+            }
+            mainLayout.add(left, right);
+            add(mainLayout);
 
         } catch (NumberFormatException | NullPointerException e) {
             add(new H1("Error loading recipe"));
