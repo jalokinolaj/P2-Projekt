@@ -35,7 +35,7 @@ public class RecipeEntity {
     @Column(name = "nutrition")
     private String nutrition;
 
-    // Stored as text in DB (e.g. "4.4"), parsed to double when sorting
+    // Stored as text in DataBase parsed to double when sorting
     @Column(name = "rating")
     private String rating;
 

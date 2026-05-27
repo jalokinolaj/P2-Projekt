@@ -17,7 +17,7 @@ public class SavedRecipeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    // Links to app_user.id — stable even if the username changes
+    // Links to app_user.id stable even if the username changes
     @Column(name = "user_id")
     private Long userId;
 

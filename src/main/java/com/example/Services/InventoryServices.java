@@ -18,18 +18,18 @@ public class InventoryServices {
 	private InventoryRepository inventoryRepository;
 
 	public List<Inventory> getInventoryForUser(Long userId) {
-		// Main inventory list: sorted by expiry first so older items are visible sooner.
+		// Main inventory list is sorted by expiry first so older items are visible sooner.
 		return inventoryRepository.findByUserIdOrderByExpiryDateAscIngredientNameAsc(userId);
 	}
 
 	public List<Inventory> getRunOutSoonForUser(Long userId) {
-		// "Run out first" list: smallest quantity first.
+		// "Run out first" list by smallest quantity first
 		return inventoryRepository.findByUserIdOrderByQuantityAsc(userId);
 	}
 
 	public Inventory addOrUpdateIngredient(Long userId, String ingredientName, Double quantity, String unit,
 			Double minimumQuantity, LocalDate expiryDate) {
-		// Upsert: update existing ingredient row for this user, otherwise create a new one.
+		//  update existing ingredient row for this user or create a new one.
 		String trimmedIngredientName = ingredientName.trim();
 		String trimmedUnit = unit.trim();
 
@@ -58,7 +58,7 @@ public class InventoryServices {
 		return inventoryRepository.findByIdAndUserId(id, userId)
 				.map(item -> {
 					item.setQuantity(quantity);
-					// Keep normalized values in sync until dedicated unit conversion is introduced.
+					// Keep normalized values in sync with orignal values
 					item.setNormalizedQuantity(quantity);
 					item.setUpdatedAt(LocalDateTime.now());
 					inventoryRepository.save(item);

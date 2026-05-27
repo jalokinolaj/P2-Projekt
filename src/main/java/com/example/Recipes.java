@@ -19,15 +19,15 @@ public class Recipes {
     @Column(name = "recipe_name", nullable = false)
     private String recipeName;
 
-    // nullable = false removed — img_src has nulls in the DB
+    // check for nullability 
     @Column(name = "img_src")
     private String imgSrc;
 
-    // Stored as text in DB (e.g. "4.4"), parsed to Double when needed
+    // Stored as text in DataBase (e.g. "4.4"), parsed to Double when needed
     @Column
     private String rating;
 
-    // --- Constructors ---
+    //Constructors
 
     public Recipes() {
     }
@@ -38,7 +38,7 @@ public class Recipes {
         this.rating = rating;
     }
 
-    // --- Getters & Setters ---
+    //Getters & Setters
 
     public Long getId() {
         return id;

@@ -19,11 +19,11 @@ public class Inventory {
 	private Long id;
 
 	@Column(name = "user_id", nullable = false)
-	// Owner of this ingredient row; used to keep each user's inventory separate.
+	// Owner of ingredient row with user_id
 	private Long userId;
 
 	@Column(name = "ingredient_name", nullable = false)
-	// Ingredient identifier shown in UI and matched against recipe requirements.
+
 	private String ingredientName;
 
 	@Column(nullable = false)
@@ -31,23 +31,22 @@ public class Inventory {
 	private Double quantity;
 
 	@Column(name = "normalized_quantity", nullable = false)
-	// Normalized quantity for matching against recipe requirements, for example: grams of total weight instead of pieces.
+	// normalized quantity not really used but may be useful.
 	private Double normalizedQuantity;	
 
 	@Column(nullable = false)
-	// Unit for quantity, for example: pcs, g, ml.
+	// Unit for quantity, for example: pcs, lb, qt.
 	private String unit;
 
 	@Column(name = "normalized_unit", nullable = false)
-	// Normalized unit for matching against recipe requirements, for example: pcs, g, ml.
+	// again not useed
 	private String normalizedUnit;
 
 	@Column(name = "minimum_quantity", nullable = false)
-	// Low-stock threshold used by urgency/risk logic.
+	// Low-stock threshold not implemented correctly.
 	private Double minimumQuantity;
 
 	@Column(name = "expiry_date")
-	// Optional date for expiry-aware recipe prioritization.
 	private LocalDate expiryDate;
 
 	@Column(name = "updated_at", nullable = false)
@@ -58,7 +57,7 @@ public class Inventory {
 
 	public Inventory(Long userId, String ingredientName, Double quantity, Double normalizedQuantity, String unit, String normalizedUnit, Double minimumQuantity,
 			LocalDate expiryDate) {
-		// This timestamp helps when you later want "recently changed" sorting.
+		// timestamp to track when ingredient updated
 		this.userId = userId;
 		this.ingredientName = ingredientName;
 		this.quantity = quantity;

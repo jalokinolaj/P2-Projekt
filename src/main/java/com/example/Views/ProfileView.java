@@ -163,7 +163,7 @@ public class ProfileView extends VerticalLayout {
             savedRecipeRepository.deleteByUserIdAndRecipeId(currentUser.getId(), recipe.getId());
             card.setVisible(false);
 
-            // Undo notification — re-saves the recipe if clicked within 5 seconds
+            // Undo notification with 5 second reset timer
             Notification notification = new Notification();
             notification.setDuration(5000);
             notification.setPosition(Notification.Position.BOTTOM_START);
@@ -190,7 +190,6 @@ public class ProfileView extends VerticalLayout {
         removeButton.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_SMALL);
         removeButton.getStyle().set("margin", "0 8px 8px");
 
-        // Stop the remove click from bubbling up to the card navigation listener
         removeButton.getElement().executeJs(
             "this.addEventListener('click', e => e.stopPropagation())"
         );

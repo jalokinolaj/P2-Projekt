@@ -37,7 +37,7 @@ public class InventoryView extends VerticalLayout {
 
 		User sessionUser = (User) VaadinSession.getCurrent().getAttribute("user");
 		Long userId = sessionUser != null ? sessionUser.getId() : null;
-		// This view is user-specific, so block access when no session user exists.
+		// This view need user login, block access when no user is logged in.
 		if (userId == null) {
 			add(new Span("Please login first."));
 			return;
@@ -79,7 +79,7 @@ public class InventoryView extends VerticalLayout {
 		DatePicker expiryDate = new DatePicker("Expiry date");
 
 		Button saveButton = new Button("Save ingredient", click -> {
-			// Keep invalid values out of the database.
+			// Keep invalid values out of the database
 			if (ingredientName.getValue() == null || ingredientName.getValue().isBlank()) {
 				Notification.show("Ingredient name is required.");
 				return;
@@ -107,7 +107,7 @@ public class InventoryView extends VerticalLayout {
 					expiryDate.getValue());
 
 			Notification.show("Ingredient saved.");
-			// Reset fields and reload grids so UI reflects the newly saved data.
+			// Reset fields and reload grid to show new/updated ingredients
 			ingredientName.clear();
 			quantity.clear();
 			expiryDate.clear();
@@ -197,7 +197,7 @@ public class InventoryView extends VerticalLayout {
 	}
 
 	private void refreshData(Long userId) {
-		// Grid 1 = full inventory, Grid 2 = "runs out first" ordering.
+		// Grid 1 is full inventory, Grid 2  is sorted by"runs out first" 
 		List<Inventory> inventory = inventoryServices.getInventoryForUser(userId);
 		inventoryGrid.setItems(inventory);
 		runOutGrid.setItems(inventoryServices.getRunOutSoonForUser(userId));

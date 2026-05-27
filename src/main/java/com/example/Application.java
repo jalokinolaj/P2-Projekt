@@ -9,7 +9,7 @@ import com.vaadin.flow.component.page.AppShellConfigurator;
 
 @SpringBootApplication
 @StyleSheet(Lumo.STYLESHEET) // Use Aura.STYLESHEET to use Aura instead
-@StyleSheet("styles.css") // Your custom styles
+@StyleSheet("styles.css") // custom styles
 public class Application implements AppShellConfigurator {
 
     public static void main(String[] args) {

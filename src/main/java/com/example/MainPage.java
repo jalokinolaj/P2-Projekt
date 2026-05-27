@@ -31,45 +31,40 @@ import com.vaadin.flow.server.VaadinSession;
 @Route("main")
 public class MainPage extends VerticalLayout {
 
-    // Tracks which category button is currently selected (default: show all)
+    // Tracks which category button is currently selected
     private String currentCategory = "All";
 
-    // Tracks the current text in the recipe name search field
+
     private String nameSearchQuery = "";
 
-    // Ingredients the user has typed and added for filtering — lives only in memory, never saved
+    // Ingredients the user has typed and added for filtering
     private final List<String> addedIngredients = new ArrayList<>();
 
-    // The row of ingredient chip tags shown below the ingredient search field
     private HorizontalLayout ingredientChips;
 
-    // Keeps a reference to all category buttons so we can update their style on click
+    // Keeps a reference to all category buttons
     private final List<Button> categoryButtons = new ArrayList<>();
 
     // The grid container that holds the recipe cards
     private Div recipeGrid;
 
-    // Spring Data JPA repository used to query the recipes table
+    // repository used to query the recipes table
     private final RecipeRepository recipeRepository;
 
-    // All recipes loaded from the database at startup, used for in-memory filtering
+    // All recipes loaded from the database and cached 
     private final List<RecipeEntity> cachedRecipes;
 
-    // Current user's inventory rows, used for fridge matching and urgency sorting.
+    // Current user inventory rows, used for fridge matching and urgency sorting.
     private final List<Inventory> inventoryItems;
 
-    // Current user's inventory ingredient names, used for fridge-mode sorting.
+    // Current user inventory ingredient names, used for fridge-mode sorting.
     private final List<String> inventoryIngredients;
 
     // When true, recipes are sorted by inventory match from the user's fridge.
     private boolean fridgeModeEnabled = false;
 
-    /**
-     * Constructor — called by Vaadin/Spring when the user navigates to "/main".
-     * Checks if a user is logged in, and either shows the main UI or an error screen.
-     *
-     * @param recipeRepository injected by Spring, provides access to the recipes table
-     */
+    //recipeRepository  provides access to the recipes table
+    
     public MainPage(RecipeRepository recipeRepository, InventoryServices inventoryServices) {
         this.recipeRepository = recipeRepository;
 
@@ -119,10 +114,10 @@ public class MainPage extends VerticalLayout {
         setSpacing(false);
         addClassName("main-page");
 
-        // Header sits outside pageWrapper so its background stretches full width
+        
         add(createHeader());
 
-        // pageWrapper centers and constrains the content below the header
+        // pageWrapper centers the content below the header
         Div pageWrapper = new Div();
         pageWrapper.addClassName("page-wrapper");
 
@@ -134,7 +129,7 @@ public class MainPage extends VerticalLayout {
         sectionTitle.addClassName("section-title");
         pageWrapper.add(sectionTitle);
 
-        // Create the recipe grid and populate it with the initial set of recipes
+        //recipe grid and fill with recipe cards
         recipeGrid = new Div();
         recipeGrid.addClassName("recipe-grid");
         refreshRecipeGrid();
@@ -170,7 +165,7 @@ public class MainPage extends VerticalLayout {
 
         titleArea.add(title, subtitle);
 
-        // Profile button in the top-right corner; opens a dialog with user info and logout
+        // Profile button in the top-right corner, that opens dialog with settings when clicked
         Button profileBtn = new Button("Profile", VaadinIcon.USER.create());
         profileBtn.addClassName("profile-btn");
         profileBtn.addClickListener(e -> openProfileDialog());
@@ -181,7 +176,7 @@ public class MainPage extends VerticalLayout {
 
     /**
      * Builds the recipe name search card.
-     * Updates nameSearchQuery and refreshes the grid every time the user changes the text field.
+     * Updates nameSearchQuery and refresh grid every time the user changes the text field.
      */
     private Div createNameSearchSection() {
         Div card = new Div();
@@ -194,7 +189,7 @@ public class MainPage extends VerticalLayout {
         nameField.setWidthFull();
         nameField.addClassName("search-field");
 
-        // Fires on every keystroke — updates the query and re-renders the grid
+        // Executes on every key pressed, then updates nameSearchQuery
         nameField.addValueChangeListener(e -> {
             nameSearchQuery = e.getValue().trim();
             refreshRecipeGrid();
@@ -230,7 +225,7 @@ public class MainPage extends VerticalLayout {
         addBtn.addClickListener(e -> {
             String val = ingredientField.getValue().trim().toLowerCase();
             if (!val.isEmpty() && !addedIngredients.contains(val)) {
-                // Add to in-memory filter list only — nothing is saved to the database
+                // Add to in-memory filter list only not database
                 addedIngredients.add(val);
                 ingredientField.clear();
                 refreshChips();
@@ -245,7 +240,7 @@ public class MainPage extends VerticalLayout {
         searchRow.add(ingredientField, addBtn);
         searchRow.expand(ingredientField);
 
-        // Chip container is hidden until at least one ingredient is added
+        // Ingredient chips are hidden until at least one ingredient is added
         ingredientChips = new HorizontalLayout();
         ingredientChips.addClassName("ingredient-chips");
         ingredientChips.setSpacing(true);
@@ -267,7 +262,7 @@ public class MainPage extends VerticalLayout {
             remove.addClassName("chip-remove");
             remove.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
 
-            // Clicking × removes this ingredient from the in-memory filter
+            // Clicking the × button removes ingredient from filtering
             remove.addClickListener(e -> {
                 addedIngredients.remove(ing);
                 refreshChips();
@@ -281,7 +276,6 @@ public class MainPage extends VerticalLayout {
 
     /**
      * Builds the row of category filter buttons (All, Breakfast, Lunch, Dinner, Dessert, Appetizer).
-     * The active category button is styled as primary; all others are tertiary (outlined).
      * Clicking a button updates currentCategory and refreshes the grid.
      */
     private Div createCategoryFilters() {
@@ -294,7 +288,7 @@ public class MainPage extends VerticalLayout {
             Button btn = new Button(cat);
             btn.addClassName("filter-btn");
 
-            // Highlight the currently selected category
+            // Highlight selected category
             if (cat.equals(currentCategory)) {
                 btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
             } else {
@@ -317,7 +311,7 @@ public class MainPage extends VerticalLayout {
             filterRow.add(btn);
         }
 
-        // Fridge mode sorts recipes by how well they match the user's current inventory
+        // Fridge mode sorts recipes by how they match the user's current inventory
         Button fridgeModeBtn = new Button("Fridge mode: Off", VaadinIcon.ARCHIVE.create());
         fridgeModeBtn.addClassName("filter-btn");
         fridgeModeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
@@ -358,7 +352,7 @@ public class MainPage extends VerticalLayout {
         } else {
             results = new ArrayList<>(cachedRecipes);
             // Sort by rating descending, keep top 300, then shuffle with today's date as seed
-            // Same 50 recipes all day — different set each day
+            // Same 50 recipes all day but changes every day
             results.sort((a, b) -> {
                 double ra = parseRating(a.getRating());
                 double rb = parseRating(b.getRating());
@@ -369,7 +363,7 @@ public class MainPage extends VerticalLayout {
             Collections.shuffle(results, new Random(java.time.LocalDate.now().toEpochDay()));
         }
 
-        // Step 2: Name filter — partial, case-insensitive match on recipe_name
+        // Step 2: Name filter
         if (!nameSearchQuery.isEmpty()) {
             results = results.stream()
                 .filter(r -> r.getRecipeName() != null &&
@@ -388,7 +382,7 @@ public class MainPage extends VerticalLayout {
                 .collect(Collectors.toList());
         }
 
-        // Step 4 Allergy filter — exclude recipes containing any of the user's allergens
+        // Step 4 Allergy filter removes all recipes that user has chose is allergic
         if (sessionUser != null && sessionUser.getAllergies() != null && !sessionUser.getAllergies().isBlank()) {
             List<String> userAllergens = java.util.Arrays.asList(sessionUser.getAllergies().split(","));
             results = results.stream()
@@ -396,14 +390,14 @@ public class MainPage extends VerticalLayout {
                 .collect(Collectors.toList());
         }
 
-        // Step 5: Category filter — map the DB's cuisine_path to our category labels
+        // Step 5: Category filter use database cuisine_path  category labels
         if (!currentCategory.equals("All")) {
             results = results.stream()
                 .filter(r -> MainPageRecipeMethods.mapCategory(r.getCuisinePath()).equals(currentCategory))
                 .collect(Collectors.toList());
         }
 
-        // Step 6: Sort — fridge mode sorts by inventory match score, otherwise by ingredient match
+        // Step 6: Sort with fridge mode sorts by inventory match score, or just match score
         if (fridgeModeEnabled) {
             results = results.stream()
                 .sorted((a, b) -> calculateFridgeScore(b) - calculateFridgeScore(a))
@@ -425,7 +419,7 @@ public class MainPage extends VerticalLayout {
             return;
         }
 
-        // Render a card for each recipe
+        // Render card for each recipe
         for (RecipeEntity entity : results) {
             int matchPercent = fridgeModeEnabled ? calculateInventoryMatch(entity) : calculateMatch(entity);
             recipeGrid.add(createRecipeCard(entity, matchPercent));
@@ -433,8 +427,8 @@ public class MainPage extends VerticalLayout {
     
     }
     
-    // Checks if a recipe matches the user's diet preference based on its ingredients
-    // Checks if a recipe matches the user's selected diet
+    // Checks if a recipe match user diet preference based on ingredients
+    // Check if a recipe match users selected diet
 
     // Returns false if the recipe contains any ingredient matching the user's allergens
     private boolean matchesAllergens(RecipeEntity recipe, List<String> allergens) {
@@ -445,7 +439,7 @@ public class MainPage extends VerticalLayout {
             String[] keywords = allergenKeywords(allergen.trim());
             for (String keyword : keywords) {
                 if (ingredients.contains(keyword.toLowerCase(Locale.ROOT))) {
-                    return false; // recipe contains this allergen — exclude it
+                    return false; // recipe contains allergen keyword then remove it
                 }
             }
         }
@@ -546,9 +540,9 @@ public class MainPage extends VerticalLayout {
         return (int) Math.round((double) matches / inventoryIngredients.size() * 100);
     }
 
-    // Simple fridge score:
-    // 1) base = normal inventory match percent
-    // 2) +10 points for each matching ingredient that is about to run out
+    // firdge score calculation
+    // step 1:normal inventory match percent
+    // step 2: give +10 points for each matching ingredient that is about to run out
     private int calculateFridgeScore(RecipeEntity entity) {
         if (entity.getIngredients() == null) {
             return 0;
@@ -593,16 +587,16 @@ public class MainPage extends VerticalLayout {
         Div card = new Div();
         card.addClassName("recipe-card");
 
-        // Image area — shows the recipe photo or a fallback emoji
+        // show recipe if avalible else show emoji
         Div imageArea = new Div();
         imageArea.addClassName("recipe-image");
-        // Written by GitHub Copilot: normalize DB URL before rendering to the browser.
+        // Normalize image URL to future proof.
         String imageUrl = MainPageRecipeMethods.normalizeImageUrl(entity.getImgSrc());
         
         if (imageUrl != null) {
             Image img = new Image(imageUrl, entity.getRecipeName());
             img.addClassName("recipe-photo");
-            // Written by GitHub Copilot: some image hosts block requests with referrer headers.
+            // change refferepolicy
             img.getElement().setAttribute("referrerpolicy", "no-referrer");
             imageArea.add(img);
         } else {
@@ -614,7 +608,7 @@ public class MainPage extends VerticalLayout {
         Div body = new Div();
         body.addClassName("card-body");
 
-        // Title row: recipe name on the left, match % badge on the right
+        // Title row: recipe name on the left match % icon on the right
         Div titleRow = new Div();
         titleRow.addClassName("title-row");
 
@@ -630,14 +624,14 @@ public class MainPage extends VerticalLayout {
         Span catChip = new Span(MainPageRecipeMethods.mapCategory(entity.getCuisinePath()));
         catChip.addClassName("category-chip");
 
-        // Meta row: cook time and serving count
+        //metaRow with cook time and serving count
         Div metaRow = new Div();
         metaRow.addClassName("meta-row");
         int minutes = MainPageRecipeMethods.parseMinutes(entity);
         metaRow.add(new Span(minutes > 0 ? "⏱ " + minutes + " min" : "⏱ N/A"));
         metaRow.add(new Span("👥 " + (entity.getServings() != null ? entity.getServings() : "?") + " servings"));
 
-        // Ingredient list (first 8 ingredients from the comma-separated DB field)
+        // Ingredient list (first 8 ingredients from the database)
         Paragraph ingLabel = new Paragraph("Ingredients:");
         ingLabel.addClassName("ingredients-label");
 
@@ -658,11 +652,7 @@ public class MainPage extends VerticalLayout {
         return card;
     }
 
-    /**
-     * Opens a modal dialog showing the logged-in user's profile information.
-     * Displays the username, number of ingredients currently added, and a logout button.
-     * Logging out clears the session and redirects to the login page.
-     */
+    //Open profile dialog with user info and settings
     private void openProfileDialog() {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("My Profile");
@@ -689,7 +679,7 @@ public class MainPage extends VerticalLayout {
             diet.getStyle().set("color", "var(--lumo-secondary-text-color)");
             content.add(diet);
 
-            // Show the allergies saved during registration (stored as comma-separated string)
+            // Show the allergies saved during registration is stored as comma separated
             String allergiesRaw = user.getAllergies();
             String allergiesDisplay = (allergiesRaw == null || allergiesRaw.isBlank()) ? "None" : allergiesRaw;
             Span allergies = new Span("Allergies: " + allergiesDisplay);
@@ -709,7 +699,7 @@ public class MainPage extends VerticalLayout {
             UI.getCurrent().navigate("profile");
         });
         
-        // Logout: close the Vaadin session and navigate back to the login page
+        // Logout and close the Vaadin session and return to login
         Button logoutBtn = new Button("Logout", VaadinIcon.SIGN_OUT.create(), e -> {
             VaadinSession.getCurrent().close();
             dialog.close();

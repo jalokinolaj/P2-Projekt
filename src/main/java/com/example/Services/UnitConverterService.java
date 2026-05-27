@@ -62,7 +62,7 @@ public class UnitConverterService {
 			return new ConversionResult(safeQuantity * COUNT_FACTORS.get(safeUnit), BASE_COUNT);
 		}
 
-		// Unknown units fall back to identity so we preserve user input without blocking save.
+		// Unknown unit, return same back with safe- quantity and unit
 		return new ConversionResult(safeQuantity, safeUnit);
 	}
 
